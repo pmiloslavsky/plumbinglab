@@ -82,6 +82,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .chip{border:1px solid var(--line);background:var(--panel-2);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:var(--f-mono);font-size:13px;font-weight:500}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .chip .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.opts .callout{flex:1 1 100%;background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:14px;font-weight:600;color:var(--ink)}
+.legend .btn{padding:2px 10px;font-size:12.5px}
 .opts .note{font-size:13.5px;color:var(--muted);flex:1 1 220px;min-width:0}
 .canvas-wrap{background:var(--sky);border:1px solid var(--line);border-radius:10px;overflow-x:auto;overflow-y:hidden;line-height:0}
 canvas{display:block;touch-action:none;cursor:crosshair}
@@ -772,7 +774,7 @@ const $=s=>document.querySelector(s);
 const cv=$('#cv'),ctx=cv.getContext('2d'),wrap=$('#wrap');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let rebuildSandbox=true,S,A,mode='lessons',lessonIdx=0,tool='pipe',hover=null,sel=null,undo=[],C=22,showHint=false,flash='';
-const opt={dev:'circ',ifc:false,sys:'cold',size:{cold:.75,hot:.75,drain:2,vent:1.5,hsup:.75,hret:.75,oil:.375,flue:6,mixed:.75},slope:.25,fx:'lav',valveSys:'cold'};
+const opt={showSizes:true,dev:'circ',ifc:false,sys:'cold',size:{cold:.75,hot:.75,drain:2,vent:1.5,hsup:.75,hret:.75,oil:.375,flue:6,mixed:.75},slope:.25,fx:'lav',valveSys:'cold'};
 let done=new Set();try{done=new Set(JSON.parse(localStorage.getItem('roughin-done')||'[]'));}catch(e){}
 const saveDone=()=>{try{localStorage.setItem('roughin-done',JSON.stringify([...done]));}catch(e){}};
 const TOOLS={
@@ -822,7 +824,7 @@ new ResizeObserver(resize).observe(wrap);
 /* ---------- drawing ---------- */
 const OFF={cold:-0.2,hot:0.2,drain:0,vent:0,hsup:-0.12,hret:0.12,oil:0,flue:0,mixed:0};
 const pt=(n,sys)=>[(nx(n)+.5+OFF[sys])*C,(ny(n)+.5+OFF[sys])*C];
-const pw=(sys,s)=>sys==='drain'?C*(.1+s*.075):sys==='vent'?C*(.08+s*.06):sys==='flue'?C*.62:sys==='oil'?C*.1:sys==='hsup'||sys==='hret'?C*(.1+s*.11):C*(.1+s*.13);
+const pw=(sys,s)=>sys==='drain'?C*(.05+s*.1):sys==='vent'?C*(.08+s*.06):sys==='flue'?C*.62:sys==='oil'?C*.1:sys==='hsup'||sys==='hret'?C*(.1+s*.11):C*(.1+s*.13);
 function font(sz,w=500,fam='mono'){ctx.font=`${w} ${sz}px ${fam==='mono'?'"JetBrains Mono",monospace':'"Barlow Condensed","Arial Narrow",sans-serif'}`;}
 function drawScene(){
   if(S.scene==='boiler'){drawBoilerScene();return;}
@@ -1065,6 +1067,7 @@ function drawPipes(t){
   for(const an of A.anim){const a=pt(an.a,an.sys),b=pt(an.b,an.sys);const e=S.edges[an.sys].get(ek(an.a,an.b));
     ctx.strokeStyle=an.sys==='drain'?pal.water:an.sys==='flue'?pal.ink:'#FFFFFF';ctx.globalAlpha=an.sys==='drain'?.9:an.sys==='flue'?.35:.75;ctx.lineWidth=Math.max(1.5,pw(an.sys,e.size)*.4);ctx.setLineDash([C*.18,C*.32]);
     ctx.lineDashOffset=reduce?0:-(t/1000)*C*Math.min(10,1.2+an.v*1.1);line(a,b);ctx.setLineDash([]);ctx.globalAlpha=1;}
+  if(opt.showSizes)drawSizeLabels();
   // attributes: traps, valves, prv, cleanouts
   for(const[n,a]of S.attrs.drain){if(!A.adj.drain.has(n))continue;const[x,y]=pt(n,'drain');
     if(a.trap){const fx=S.fixtures.find(f=>portOf(f,'drain')===n);const r=fx&&A.fx[fx.id];const bad=r&&r.drain&&r.drain.connected&&!r.drain.vented;
@@ -1083,6 +1086,17 @@ function drawPipes(t){
   // vent terminals: roof flashing
   for(const n of A.ventTerm||[]){const[x]=pt(n,'vent');ctx.fillStyle=pal.ink;ctx.beginPath();ctx.moveTo(x-C*.45,(ROOF-.22)*C);ctx.lineTo(x+C*.45,(ROOF-.22)*C);ctx.lineTo(x+C*.2,(ROOF-.55)*C);ctx.lineTo(x-C*.2,(ROOF-.55)*C);ctx.fill();}
 }
+function drawSizeLabels(){
+  const fs=Math.max(9,C*.34);font(fs,700);ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const sys of['flue','oil','drain','vent','hret','hsup','cold','hot','mixed']){const adj=A.adj[sys],E=S.edges[sys],seen=new Set();
+    for(const e of E.values()){const k0=ek(e.a,e.b);if(seen.has(k0))continue;const horiz=ny(e.a)===ny(e.b),st=horiz?1:W;
+      const same=(n,m)=>{const f=E.get(ek(n,m));return f&&f.size===e.size;};
+      let lo=e.a,hi=e.b;while((adj.get(lo)||[]).length===2&&same(lo,lo-st))lo-=st;while((adj.get(hi)||[]).length===2&&same(hi,hi+st))hi+=st;
+      for(let n=lo;n<hi;n+=st)seen.add(ek(n,n+st));if((hi-lo)/st<2)continue;
+      const a=pt(lo,sys),b=pt(hi,sys),off=pw(sys,e.size)/2+C*.38;const x=(a[0]+b[0])/2+(horiz?0:off),y=(a[1]+b[1])/2+(horiz?off+C*.15:0);
+      const t=sz(e.size),w=ctx.measureText(t).width+C*.3;ctx.fillStyle=pal.panel;ctx.strokeStyle=pal[sys];ctx.lineWidth=1.5;rr(x-w/2,y-fs*.65,w,fs*1.3,fs*.65);ctx.fill();ctx.stroke();
+      ctx.fillStyle=pal.ink;ctx.fillText(t,x,y+.5);}}
+  ctx.textAlign='left';}
 function drawEffects(t){
   // leak spray
   for(const L of A.spray){const[x,y]=pt(L.n,L.sys);const dx=Math.sign(nx(L.n)-nx(L.from)),dy=Math.sign(ny(L.n)-ny(L.from));ctx.fillStyle=pal.water;
@@ -1168,7 +1182,7 @@ function renderOpts(){
   if(tool==='pipe'){const ss=allowedSys();if(!ss.includes(opt.sys))opt.sys=ss[0];
     h+=`<span class="lbl">System</span><div class="chips">${ss.map(s=>`<button class="chip" data-sys="${s}" aria-pressed="${opt.sys===s}"><span class="sw" style="background:var(--${s})"></span>${SYS[s].label}</button>`).join('')}</div>`;
     h+=`<span class="lbl">Size</span><div class="chips">${SYS[opt.sys].sizes.map(z=>`<button class="chip" data-size="${z}" aria-pressed="${opt.size[opt.sys]===z}">${sz(z)}</button>`).join('')}</div>`;}
-  else if(tool==='slope')h+=`<span class="lbl">Fall per foot</span><div class="chips">${[0,.125,.25,.5].map(z=>`<button class="chip" data-slope="${z}" aria-pressed="${opt.slope===z}">${z?SL[z]+'″/ft':'flat'}</button>`).join('')}</div>`;
+  else if(tool==='slope')h+=`<div class="callout">Heads up: the drawing never tilts. A sloped pipe still looks level. Its slope shows only as the label above each horizontal drain (flat, ⅛, ¼ or ½), and a pipe without enough slope glows red.</div><span class="lbl">Fall per foot</span><div class="chips">${[0,.125,.25,.5].map(z=>`<button class="chip" data-slope="${z}" aria-pressed="${opt.slope===z}">${z?SL[z]+'″/ft':'flat'}</button>`).join('')}</div>`;
   else if(tool==='valve'&&allowedSys().includes('hot'))h+=`<span class="lbl">Prefer</span><div class="chips">${['cold','hot'].map(s=>`<button class="chip" data-vsys="${s}" aria-pressed="${opt.valveSys===s}"><span class="sw" style="background:var(--${s})"></span>${SYS[s].label}</button>`).join('')}</div>`;
   else if(tool==='dev'){const ds=lesson()?.devices||Object.keys(DEVS);if(!ds.includes(opt.dev))opt.dev=ds[0];
     h+=`<span class="lbl">Device</span><div class="chips">${ds.map(k=>`<button class="chip" data-dev="${k}" aria-pressed="${opt.dev===k}">${DEVS[k].label}</button>`).join('')}</div>`;
@@ -1194,7 +1208,7 @@ function renderPanels(){
   // header & strip
   $('#modeLessons').setAttribute('aria-pressed',mode==='lessons');$('#modeSandbox').setAttribute('aria-pressed',mode==='sandbox');$('#modeBoiler').setAttribute('aria-pressed',mode==='boiler');
   const bz=S.scene==='boiler',wb=$('#waterBtn');wb.hidden=!S.supplyOn&&!bz;const on=bz?S.power:S.waterOn;wb.setAttribute('aria-pressed',on);$('#waterTxt').textContent=bz?(on?'Power on':'Power off'):(on?'Water on':'Water off');
-  $('#legend').innerHTML=(bz?['hsup','hret','oil','flue','cold','hot','mixed']:['cold','hot','drain','vent']).map(k=>`<span><i style="background:var(--${k})"></i>${SYS[k].label}</span>`).join('')+`<span>1 square = 1 ft${bz?' · copper hydronic · ⅜″ oil · 6″ flue':' · copper type L supply · PVC DWV'}</span>`;
+  $('#legend').innerHTML=(bz?['hsup','hret','oil','flue','cold','hot','mixed']:['cold','hot','drain','vent']).map(k=>`<span><i style="background:var(--${k})"></i>${SYS[k].label}</span>`).join('')+`<button class="btn" data-act="sizes" aria-pressed="${opt.showSizes}">Pipe sizes: ${opt.showSizes?'on':'off'}</button><span>1 square = 1 ft${bz?' · copper hydronic · ⅜″ oil · 6″ flue':' · copper type L supply · PVC DWV'}</span>`;
   $('#strip').hidden=mode==='sandbox';
   $('#strip').innerHTML=LL().map((L,i)=>`<button data-l="${i}" class="${done.has(L.key)?'done':''}" aria-current="${mode!=='sandbox'&&i===lessonIdx}"><span class="n">${done.has(L.key)?'✓':i+1}</span>${L.short}</button>`).join('');
   // lesson card
@@ -1236,6 +1250,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data
   if(b.closest('.issues')){const n=b.dataset.node;sel=n===''?null:(sel===+n?null:+n);renderPanels();return;}
   const a=b.dataset.act;
   if(a==='next')loadLesson(lessonIdx+1);else if(a==='sandbox')loadSandbox(false);else if(a==='hint'){showHint=!showHint;renderPanels();}else if(a==='reset')loadLesson(lessonIdx);
+  else if(a==='sizes'){opt.showSizes=!opt.showSizes;renderPanels();}
   else if(a==='design'){ZONES.forEach(z=>S.open.add(z.id));recompute();}
   else if(a==='shower'){S.open.has('ind')?S.open.delete('ind'):S.open.add('ind');recompute();}
   else if(a==='alloff'){S.open.clear();recompute();}
