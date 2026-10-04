@@ -377,7 +377,7 @@ function analyze(S){
         let prev=0;
         for(let i=0;i<path.length-1;i++){const a=path[i],b=path[i+1],k=ek(a,b),e=S.edges.drain.get(k);
           dfu.set(k,(dfu.get(k)||0)+def.dfu);
-          if(e.size<prev)once('red'+k,()=>issue('err','dwv','Drain gets smaller downstream',`Pipe drops from ${sz(prev)} to ${sz(e.size)} in the direction of flow. Anything that fits the bigger pipe can jam here.`,'IRC P3002.3',b));
+          if(e.size<prev)A.badEdges.add(k);if(e.size<prev)once('red'+k,()=>issue('err','dwv','Drain gets smaller downstream',`Pipe drops from ${sz(prev)} to ${sz(e.size)} in the direction of flow. Anything that fits the bigger pipe can jam here.`,'IRC P3002.3',b));
           prev=Math.max(prev,e.size);
           if(def.integral&&e.size<3){D.under3=true;once('wc'+k,()=>issue('err','dwv','Toilet drain under 3″',`A toilet's drain must be at least 3″ all the way to the sewer. This piece is ${sz(e.size)}.`,'IRC P3005.4',b));A.badEdges.add(k);}
           if(ny(b)<ny(a)){A.badEdges.add(k);once('up'+k,()=>issue('err','dwv','Drain runs uphill','Water cannot flow up. Reroute so the drain only goes level-with-slope or down toward the sewer.','',b));}
