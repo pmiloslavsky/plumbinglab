@@ -1054,7 +1054,7 @@ function drawPipes(t){
   }
   // bad drain overlay & slope marks
   for(const e of S.edges.drain.values()){const k=ek(e.a,e.b),a=pt(e.a,'drain'),b=pt(e.b,'drain'),horiz=ny(e.a)===ny(e.b);
-    if(A.badEdges.has(k)){ctx.strokeStyle=pal.err;ctx.lineWidth=pw('drain',e.size)+5;ctx.globalAlpha=.35+.2*Math.sin(t/200);line(a,b);ctx.globalAlpha=1;}
+    if(A.badEdges.has(k)){ctx.strokeStyle=pal.err;ctx.lineWidth=pw('drain',e.size)+7;ctx.globalAlpha=.6+.25*Math.sin(t/200);line(a,b);ctx.globalAlpha=1;ctx.lineWidth=Math.max(2,pw('drain',e.size)*.35);line(a,b);}
     if(horiz&&(tool==='slope'||A.badEdges.has(k))){const dir=A.drainDir.get(k);font(Math.max(9,C*.38),600);ctx.fillStyle=A.badEdges.has(k)?pal.err:pal.ink;ctx.textAlign='center';ctx.textBaseline='bottom';
       const mx=(a[0]+b[0])/2,my=a[1]-pw('drain',e.size)/2-2;ctx.fillText(SL[e.slope],mx,my);
       if(dir){const s=Math.sign(nx(dir[1])-nx(dir[0]));ctx.beginPath();ctx.moveTo(mx+s*C*.22,a[1]+pw('drain',e.size)/2+C*.18);ctx.lineTo(mx-s*C*.08,a[1]+pw('drain',e.size)/2+C*.08);ctx.lineTo(mx-s*C*.08,a[1]+pw('drain',e.size)/2+C*.28);ctx.fill();}
@@ -1140,7 +1140,7 @@ cv.addEventListener('pointerdown',e=>{const c=cellAt(e);if(!c)return;const n=nid
 });
 cv.addEventListener('pointermove',e=>{const c=cellAt(e);hover=c;renderStatus();if(!stroke||!c)return;
   if(c.x===stroke.last.x&&c.y===stroke.last.y)return;stroke.moved=true;
-  if(tool==='pipe'){const sys=opt.sys,size=opt.size[sys];stepTo(c,(a,b)=>{if(S.blocked.has(b)){setFlash('That’s a window. Route the pipe around it.');return false;}addEdge(S,sys,a,b,size);});}
+  if(tool==='pipe'){const sys=opt.sys,size=opt.size[sys];stepTo(c,(a,b)=>{if(S.blocked.has(b)){setFlash('That’s a window. Route the pipe around it.');return false;}const old=S.edges[sys].get(ek(a,b));addEdge(S,sys,a,b,size,sys==='drain'&&ny(a)===ny(b)?Math.max(old?old.slope:0,.25):undefined);});}
   else if(tool==='erase')stepTo(c,(a,b)=>eraseCell(b));
   else if(tool==='slope')stepTo(c,(a,b)=>{const e=S.edges.drain.get(ek(a,b));if(e&&ny(a)===ny(b))e.slope=opt.slope;});
   recompute();});
