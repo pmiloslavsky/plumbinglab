@@ -17,6 +17,7 @@ body{margin:0}
   --crawl:#CFCABE; --soil:#B9A88B; --soil-dot:#9A8767; --concrete:#B6BAB8; --grid:#1B252812;
   --cold:#2C6BD3; --hot:#CF3B2A; --drain:#3D454B; --vent:#2F8550; --water:#4AA2EA; --pipe-edge:#11181B55;
   --fixture:#FFFFFF; --fixture-line:#7B878B; --ok:#2B7A4B; --warn:#A86F06; --err:#B01F57;
+  --hsup:#D9661F; --hret:#7A55C7; --oil:#7A5426; --flue:#868C90; --mixed:#C2408E; --brick:#B5654A; --mortar:#E3D6C8; --cat:#3F3633; --mouse:#8A827C;
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Source Sans 3","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -27,14 +28,14 @@ body{margin:0}
   --sky:#17222B; --room:#1E2629; --room-2:#232C2F; --framing:#4A3E2E; --framing-line:#7C6849;
   --crawl:#282724; --soil:#372F24; --soil-dot:#54473A; --concrete:#363B3C; --grid:#E3E9E80F;
   --cold:#5A94F2; --hot:#F2705B; --drain:#A3ACB2; --vent:#5CC283; --water:#79BFF6; --pipe-edge:#00000088;
-  --fixture:#2C363A; --fixture-line:#8E9CA0; --ok:#4DB57C; --warn:#E3A93D; --err:#F2669A; color-scheme:dark}}
+  --fixture:#2C363A; --fixture-line:#8E9CA0; --ok:#4DB57C; --warn:#E3A93D; --err:#F2669A; --hsup:#F08A45; --hret:#A98CEB; --oil:#B08350; --flue:#A9AFB3; --mixed:#EC7DBB; --brick:#7C4130; --mortar:#4C3B33; --cat:#E4D8CA; --mouse:#B7AFA8; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#121719; --panel:#1A2124; --panel-2:#20292C; --ink:#E3E9E8; --muted:#97A5A8; --line:#2E393C;
   --accent:#DB8D57; --accent-soft:#3A2A1F; --accent-ink:#1A1310;
   --sky:#17222B; --room:#1E2629; --room-2:#232C2F; --framing:#4A3E2E; --framing-line:#7C6849;
   --crawl:#282724; --soil:#372F24; --soil-dot:#54473A; --concrete:#363B3C; --grid:#E3E9E80F;
   --cold:#5A94F2; --hot:#F2705B; --drain:#A3ACB2; --vent:#5CC283; --water:#79BFF6; --pipe-edge:#00000088;
-  --fixture:#2C363A; --fixture-line:#8E9CA0; --ok:#4DB57C; --warn:#E3A93D; --err:#F2669A; color-scheme:dark}
+  --fixture:#2C363A; --fixture-line:#8E9CA0; --ok:#4DB57C; --warn:#E3A93D; --err:#F2669A; --hsup:#F08A45; --hret:#A98CEB; --oil:#B08350; --flue:#A9AFB3; --mixed:#EC7DBB; --brick:#7C4130; --mortar:#4C3B33; --cat:#E4D8CA; --mouse:#B7AFA8; color-scheme:dark }
 html,body{background:var(--bg);color:var(--ink)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.5}
 *{box-sizing:border-box}
@@ -167,6 +168,7 @@ canvas.hand{cursor:pointer;touch-action:pan-x pan-y}
     <div class="seg" role="group" aria-label="Mode">
       <button id="modeLessons" aria-pressed="true">Lessons</button>
       <button id="modeSandbox" aria-pressed="false">Sandbox</button>
+      <button id="modeBoiler" aria-pressed="false">Boiler lab</button>
     </div>
     <button class="water-btn" id="waterBtn" aria-pressed="false"><span class="dot"></span><span id="waterTxt">Water off</span></button>
   </header>
@@ -179,7 +181,7 @@ canvas.hand{cursor:pointer;touch-action:pan-x pan-y}
       <div class="opts" id="opts"></div>
       <div class="canvas-wrap" id="wrap"><canvas id="cv" aria-label="House cutaway with plumbing"></canvas></div>
       <div class="status"><span id="statusL"></span><span id="statusR"></span></div>
-      <div class="legend">
+      <div class="legend" id="legend">
         <span><i style="background:var(--cold)"></i>Cold supply</span>
         <span><i style="background:var(--hot)"></i>Hot supply</span>
         <span><i style="background:var(--drain)"></i>Drain / waste</span>
@@ -193,15 +195,15 @@ canvas.hand{cursor:pointer;touch-action:pan-x pan-y}
       <section class="card" id="inspCard"></section>
     </aside>
   </div>
-  <p class="foot">Teaching values follow the 2021 International Residential Code (IRC) and standard hydraulics: 0.433 psi per foot of rise, Hazen-Williams friction (C = 140), and fitting losses as equivalent pipe length. Your local code and inspector have the final word.</p>
+  <p class="foot">Teaching values follow the 2021 International Residential Code (IRC) and standard hydraulics: 0.433 psi per foot of rise, Hazen-Williams friction (C = 140), and fitting losses as equivalent pipe length. The Boiler lab uses 140,000 BTU per gallon of #2 oil at 85% efficiency, baseboard rated 550 BTU/h per foot at 180°F, and a wet-rotor circulator curve. Your local code and inspector have the final word.</p>
 </div>
 
 <script id="engine">
 /* ================= ENGINE ================= */
-const W=40,H=26,ROOF=3,F2=12,F1=21;
-const SYSTEMS=['cold','hot','drain','vent'];
-const SYS={cold:{label:'Cold',sizes:[0.5,0.75,1]},hot:{label:'Hot',sizes:[0.5,0.75,1]},drain:{label:'Drain',sizes:[1.25,1.5,2,3,4]},vent:{label:'Vent',sizes:[1.25,1.5,2,3]}};
-const ID={0.5:0.545,0.75:0.785,1:1.025};            // copper type L inside diameter, in
+const W=40,ROOF=3,F2=12,F1=21,SLAB=30;let H=32;
+const SYSTEMS=['cold','hot','drain','vent','hsup','hret','oil','flue','mixed'];
+const SYS={cold:{label:'Cold',sizes:[0.5,0.75,1]},hot:{label:'Hot',sizes:[0.5,0.75,1]},drain:{label:'Drain',sizes:[1.25,1.5,2,3,4]},vent:{label:'Vent',sizes:[1.25,1.5,2,3]},hsup:{label:'Boiler supply',sizes:[0.5,0.75,1,1.25,1.5]},hret:{label:'Boiler return',sizes:[0.5,0.75,1,1.25,1.5]},oil:{label:'Oil',sizes:[0.375]},flue:{label:'Flue',sizes:[6]},mixed:{label:'Tempered',sizes:[0.5,0.75]}};
+const ID={0.5:0.545,0.75:0.785,1:1.025,1.25:1.265,1.5:1.505};            // copper type L inside diameter, in
 const ELL={0.5:1,0.75:2,1:2.5}, TEE_BR={0.5:3,0.75:4,1:5}, TEE_RUN={0.5:1,0.75:1.5,1:2}; // equivalent length, ft
 const HW_C=140, PSI_FT=0.433, PRV_SET=60;
 const TRAP_ARM={1.25:5,1.5:6,2:8,3:12,4:16};          // IRC Table P3105.1
@@ -217,14 +219,14 @@ const FX={
   tub:{name:'Bathtub',w:5,h:2,q:4.0,hotFrac:.6,pmin:20,dfu:2,trapMin:1.5,ports:[{sys:'hot',dx:0,dy:-1},{sys:'cold',dx:1,dy:-1},{sys:'drain',dx:0,dy:2}]},
 };
 const nid=(x,y)=>y*W+x, nx=n=>n%W, ny=n=>(n/W)|0, ek=(a,b)=>a<b?a+'_'+b:b+'_'+a;
-const SZ={0.5:'½',0.75:'¾',1:'1',1.25:'1¼',1.5:'1½',2:'2',3:'3',4:'4'};
+const SZ={0.375:'⅜',6:'6',0.5:'½',0.75:'¾',1:'1',1.25:'1¼',1.5:'1½',2:'2',3:'3',4:'4'};
 const sz=s=>SZ[s]+'″';
 const SL={0:'flat',0.125:'⅛',0.25:'¼',0.5:'½'};
 
-function newState(){return{fixtures:[],edges:{cold:new Map(),hot:new Map(),drain:new Map(),vent:new Map()},attrs:{cold:new Map(),hot:new Map(),drain:new Map(),vent:new Map()},open:new Set(),waterOn:false,staticPsi:60,supplyOn:true,drainOn:true,blocked:new Set(),blockRects:[]};}
+function newState(){return{scene:'house',fixtures:[],edges:Object.fromEntries(SYSTEMS.map(s=>[s,new Map()])),attrs:Object.fromEntries(SYSTEMS.map(s=>[s,new Map()])),power:false,nozzle:0.5,priority:false,mixSet:130,checks:null,open:new Set(),waterOn:false,staticPsi:60,supplyOn:true,drainOn:true,blocked:new Set(),blockRects:[]};}
 function block(S,x0,y0,x1,y1,kind){S.blockRects.push({x0,y0,x1,y1,kind:kind||'window'});for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)S.blocked.add(nid(x,y));}
 function addFx(S,o){S.fixtures.push({id:o.id,type:o.type,x:o.x,y:o.y,label:o.label||null});}
-function baseFx(S){addFx(S,{id:'meter',type:'meter',x:2,y:22});addFx(S,{id:'sewer',type:'sewer',x:0,y:24});}
+function baseFx(S){addFx(S,{id:'meter',type:'meter',x:2,y:27});addFx(S,{id:'sewer',type:'sewer',x:0,y:29});}
 function addEdge(S,sys,a,b,size,slope){const k=ek(a,b),old=S.edges[sys].get(k);S.edges[sys].set(k,{a:Math.min(a,b),b:Math.max(a,b),size,slope:slope??(old?old.slope:0.25)});}
 function run(S,sys,size,pts,slope){for(let i=0;i<pts.length-1;i++){let[x,y]=pts[i];const[x2,y2]=pts[i+1];while(x!==x2||y!==y2){const xn=x!==x2?x+Math.sign(x2-x):x,yn=x!==x2?y:y+Math.sign(y2-y);addEdge(S,sys,nid(x,y),nid(xn,yn),size,slope);x=xn;y=yn;}}}
 function setAttr(S,sys,x,y,o){S.attrs[sys].set(nid(x,y),o);}
@@ -234,8 +236,8 @@ function adjOf(S,sys){const m=new Map(),add=(a,b)=>{let l=m.get(a);if(!l)m.set(a
 function bfs(adj,src,blocked){const T={src,parent:new Map(),dist:new Map(),order:[]};if(src==null||!adj.has(src))return T;T.dist.set(src,0);T.order.push(src);for(let i=0;i<T.order.length;i++){const n=T.order[i];if(blocked&&blocked(n))continue;for(const m of adj.get(n)||[]){if(T.dist.has(m))continue;T.dist.set(m,T.dist.get(n)+1);T.parent.set(m,n);T.order.push(m);}}return T;}
 const hw=(q,d)=>q<=0?0:4.52*Math.pow(q,1.85)/(Math.pow(HW_C,1.85)*Math.pow(d,4.87)); // psi per ft
 const fxName=f=>f.label||FX[f.type].name;
-const COST={cold:{0.5:4,0.75:7,1:11},hot:{0.5:4,0.75:7,1:11},drain:{1.25:2,1.5:2.5,2:3.5,3:6,4:9},vent:{1.25:2,1.5:2.5,2:3.5,3:6}};
-const FIT={cold:3,hot:3,drain:5,vent:4},ACOST={open:25,closed:25,prv:120,xtank:60,trap:12,co:15};
+const COST={cold:{0.5:4,0.75:7,1:11},hot:{0.5:4,0.75:7,1:11},drain:{1.25:2,1.5:2.5,2:3.5,3:6,4:9},vent:{1.25:2,1.5:2.5,2:3.5,3:6},hsup:{0.5:4,0.75:7,1:11,1.25:16,1.5:21},hret:{0.5:4,0.75:7,1:11,1.25:16,1.5:21},oil:{0.375:3},flue:{6:14},mixed:{0.5:4,0.75:7}};
+const FIT={cold:3,hot:3,drain:5,vent:4,hsup:4,hret:4,oil:2,flue:12,mixed:3},ACOST={open:25,closed:25,prv:120,xtank:60,trap:12,co:15,circ:180,airsep:95,hxt:70,relief:30,bfp:65,fillv:55,check:25,filter:25,firo:20,baro:40};
 function costOf(S,adj){const c={pipe:0,fit:0,dev:0,ft:0};for(const sys of SYSTEMS){for(const e of S.edges[sys].values()){c.pipe+=COST[sys][e.size];c.ft++;}
   for(const[n,l]of adj[sys]){const turn=l.length===2&&(l[0]-n)!==-(l[1]-n);if(l.length>=3||turn)c.fit+=FIT[sys];}
   for(const[n,a]of S.attrs[sys]){if(!adj[sys].has(n))continue;if(a.v)c.dev+=ACOST[a.v];if(a.trap)c.dev+=ACOST.trap;if(a.co)c.dev+=ACOST.co;}}
@@ -416,8 +418,8 @@ const allOpen=(S,ids)=>ids.every(i=>S.open.has(i));
 const LESSONS=[
 {key:'water-in',short:'Water in',kicker:'Supply',title:'Bring water into the house',supplyOn:true,drainOn:false,psi:60,
  tools:['hand','pipe','valve','erase'],systems:['cold'],sizes:{cold:0.75},
- intro:`<p>Water arrives from the street main at about <strong>60 psi</strong>, passes the <strong>meter</strong> in the crawlspace, and has to reach the kitchen sink on the first floor.</p><p>Every house needs a <strong>main shutoff valve</strong> right where the service enters. Then turn the water on. Any pipe end you leave open will spray.</p>`,
- hint:`Pick <strong>Pipe</strong>, then drag from the blue ring just right of the meter, along the crawlspace, and up through the floor to the blue ring on the sink's right side. Then pick <strong>Valve</strong> and click the pipe one square from the meter.`,
+ intro:`<p>Water arrives from the street main at about <strong>60 psi</strong>, passes the <strong>meter</strong> in the basement, and has to reach the kitchen sink on the first floor.</p><p>Every house needs a <strong>main shutoff valve</strong> right where the service enters. Then turn the water on. Any pipe end you leave open will spray.</p>`,
+ hint:`Pick <strong>Pipe</strong>, then drag from the blue ring just right of the meter, along the basement, and up through the floor to the blue ring on the sink's right side. Then pick <strong>Valve</strong> and click the pipe one square from the meter.`,
  setup(S){addFx(S,{id:'sink',type:'kitchen',x:27,y:18});},
  goals:[['Run a cold line from the meter to the kitchen sink',(A)=>A.fx.sink.coldConn],
         ['Put a main shutoff valve within 5 ft of the meter',(A)=>A.hasMain],
@@ -426,18 +428,18 @@ const LESSONS=[
 {key:'pressure',short:'Pressure',kicker:'Supply sizing',title:'Height, friction and pipe size',supplyOn:true,drainOn:false,psi:45,
  tools:['hand','pipe','valve','erase'],systems:['cold'],sizes:{cold:0.75},
  intro:`<p>This upstairs bathroom was piped entirely in ½″. Street pressure here is only <strong>45 psi</strong>.</p><p>You lose <strong>0.433 psi for every foot</strong> water climbs, and friction rises steeply with flow: double the gpm in the same pipe and the loss roughly triples. Turn the water on and run the shower, tub and toilet together. Watch the shower pressure in Readings.</p>`,
- hint:`Redraw the trunk in <strong>¾″</strong>: from the meter, along the crawlspace, up the riser and across to the tub branch. Drawing over an existing pipe changes its size. The short drops to each fixture can stay ½″.`,
+ hint:`Redraw the trunk in <strong>¾″</strong>: from the meter, along the basement, up the riser and across to the tub branch. Drawing over an existing pipe changes its size. The short drops to each fixture can stay ½″.`,
  setup(S){addFx(S,{id:'wc',type:'toilet',x:14,y:9});addFx(S,{id:'tub',type:'tub',x:18,y:10});addFx(S,{id:'shower',type:'shower',x:25,y:4});
-   run(S,'cold',.5,[[4,22],[30,22],[30,13],[14,13],[14,11]]);run(S,'cold',.5,[[19,13],[19,9]]);run(S,'cold',.5,[[27,13],[27,8]]);setAttr(S,'cold',5,22,{v:'open'});S.waterOn=false;},
+   run(S,'cold',.5,[[4,27],[30,27],[30,13],[14,13],[14,11]]);run(S,'cold',.5,[[19,13],[19,9]]);run(S,'cold',.5,[[27,13],[27,8]]);setAttr(S,'cold',5,27,{v:'open'});S.waterOn=false;},
  goals:[['Run the shower, tub and toilet at the same time',(A,S)=>S.waterOn&&allOpen(S,['wc','tub','shower'])],
         ['Shower holds at least 20 psi while all three run',(A,S)=>S.waterOn&&allOpen(S,['wc','tub','shower'])&&(A.fx.shower.cold.P??0)>=20],
         ['Keep every cold pipe at or under 8 ft/s',(A,S)=>S.waterOn&&allOpen(S,['wc','tub','shower'])&&A.maxVel.cold<=8&&A.leaks.length===0]]},
 {key:'hot',short:'Hot water',kicker:'Supply',title:'Hook up the water heater',supplyOn:true,drainOn:false,psi:60,
  tools:['hand','pipe','valve','erase'],systems:['cold','hot'],sizes:{cold:0.75,hot:0.75},
  intro:`<p>Hot water is just cold water that has gone through the heater. The heater's <strong>cold inlet</strong> (right) needs a feed and its own <strong>shutoff valve</strong>. The <strong>hot outlet</strong> (left) supplies the fixtures.</p><p>By convention the hot side is on the <strong>left</strong> at every fixture. The ports are already set that way.</p>`,
- hint:`Cold: start on the crawlspace trunk to the right of the heater, run up beside it and over to its blue inlet, then add a valve on that line. Hot: start at the heater's red outlet, go up a square, run right across the ceiling, then drop to the red ports on the lavatory and the shower.`,
+ hint:`Cold: start on the basement trunk to the right of the heater, run up beside it and over to its blue inlet, then add a valve on that line. Hot: start at the heater's red outlet, go up a square, run right across the ceiling, then drop to the red ports on the lavatory and the shower.`,
  setup(S){addFx(S,{id:'heater',type:'heater',x:6,y:16});addFx(S,{id:'lav',type:'lav',x:14,y:18});addFx(S,{id:'shower',type:'shower',x:20,y:13});
-   run(S,'cold',.75,[[4,22],[22,22]]);run(S,'cold',.5,[[22,22],[22,17]]);run(S,'cold',.5,[[16,22],[16,19]]);setAttr(S,'cold',5,22,{v:'open'});},
+   run(S,'cold',.75,[[4,27],[22,27]]);run(S,'cold',.5,[[22,27],[22,17]]);run(S,'cold',.5,[[16,27],[16,19]]);setAttr(S,'cold',5,27,{v:'open'});},
  goals:[['Feed cold water to the heater inlet',(A)=>A.heaterFed],
         ['Put a shutoff valve on the heater inlet',(A)=>A.heaterValve],
         ['Run hot to the lavatory and the shower',(A)=>A.fx.lav.hotConn&&A.fx.shower.hotConn],
@@ -446,7 +448,7 @@ const LESSONS=[
  tools:['hand','pipe','trap','erase'],systems:['drain','vent'],sizes:{drain:1.5,vent:1.5},
  intro:`<p>Every fixture needs a <strong>trap</strong>: a U-bend that holds a plug of water to block sewer gas. A trap needs a <strong>vent</strong> too. Without one, water rushing down the drain siphons the seal right out.</p><p>The vent has to join the <strong>trap arm</strong> before it turns down, within a set distance of the trap. For a 1½″ arm that's <strong>6 ft</strong>. The vent then runs up and out through the roof.</p>`,
  hint:`Pick <strong>Trap</strong> and click the lavatory's drain port. The stack is 8 ft away, too far to vent from there. Pick <strong>Pipe → Vent</strong> and drag from the trap arm 2–4 squares right of the trap straight up past the roof line.`,
- setup(S){addFx(S,{id:'lav',type:'lav',x:10,y:9});run(S,'drain',1.5,[[11,10],[19,10]]);run(S,'drain',2,[[19,10],[19,24]]);run(S,'drain',3,[[19,24],[1,24]]);},
+ setup(S){addFx(S,{id:'lav',type:'lav',x:10,y:9});run(S,'drain',1.5,[[11,10],[19,10]]);run(S,'drain',2,[[19,10],[19,29]]);run(S,'drain',3,[[19,29],[1,29]]);},
  goals:[['Put a P-trap at the lavatory outlet',(A)=>A.fx.lav.drain?.trap],
         ['Vent the trap arm within 6 ft of the trap',(A)=>A.fx.lav.drain?.vented],
         ['No open drain or vent ends',(A)=>!A.issues.some(i=>/Open (drain|vent) end|Vent stops/.test(i.title))],
@@ -454,11 +456,11 @@ const LESSONS=[
 {key:'slope',short:'Slope & size',kicker:'Drain, waste & vent',title:'Make waste flow downhill',supplyOn:false,drainOn:true,psi:60,
  tools:['hand','pipe','slope','erase'],systems:['drain','vent'],sizes:{drain:3,vent:1.5},
  intro:`<p>Drains run on gravity. Horizontal pipe needs a steady fall: <strong>¼″ per foot</strong> up to 2½″ pipe, and <strong>⅛″ per foot</strong> for 3″ and larger. Flat pipe lets solids settle and clog.</p><p>Size is set by <strong>drainage fixture units (DFU)</strong> and by the fixture itself. A toilet needs 3″, and a shower needs at least a 1½″ trap. The rough-in below has three mistakes.</p>`,
- hint:`Redraw the toilet's drop with <strong>Drain 3″</strong>. Redraw the shower's trap arm with <strong>1½″</strong>. Then pick <strong>Slope</strong>, choose ¼, and drag along the red flat section in the crawlspace.`,
+ hint:`Redraw the toilet's drop with <strong>Drain 3″</strong>. Redraw the shower's trap arm with <strong>1½″</strong>. Then pick <strong>Slope</strong>, choose ¼, and drag along the red flat section in the basement.`,
  setup(S){addFx(S,{id:'wc',type:'toilet',x:12,y:18});addFx(S,{id:'shower',type:'shower',x:20,y:13});
-   run(S,'drain',2,[[13,21],[13,23]]);run(S,'drain',1.25,[[21,21],[17,21]]);setAttr(S,'drain',21,21,{trap:true});
-   run(S,'vent',1.5,[[17,21],[17,2]]);run(S,'drain',2,[[17,21],[17,23],[13,23]]);run(S,'drain',3,[[13,23],[9,23]]);run(S,'drain',3,[[9,23],[6,23]],0);run(S,'drain',3,[[6,23],[5,23],[5,24],[1,24]]);
-   run(S,'vent',2,[[10,23],[10,2]]);},
+   run(S,'drain',2,[[13,21],[13,28]]);run(S,'drain',1.25,[[21,21],[17,21]]);setAttr(S,'drain',21,21,{trap:true});
+   run(S,'vent',1.5,[[17,21],[17,2]]);run(S,'drain',2,[[17,21],[17,28],[13,28]]);run(S,'drain',3,[[13,28],[9,28]]);run(S,'drain',3,[[9,28],[6,28]],0);run(S,'drain',3,[[6,28],[5,28],[5,29],[1,29]]);
+   run(S,'vent',2,[[10,28],[10,2]]);},
  goals:[['Toilet drains through 3″ pipe all the way',(A)=>A.fx.wc.drain?.connected&&!A.fx.wc.drain.under3],
         ['Shower trap arm is at least 1½″',(A)=>(A.fx.shower.drain?.armSize??0)>=1.5],
         ['Every horizontal drain has code slope',(A)=>A.slopeErrors===0&&A.fx.wc.drain?.connected],
@@ -483,12 +485,12 @@ const LESSONS=[
         ['Peak test: everything open, no leaks, every fixture at minimum',(A,S)=>peak(A,S)]]},
 {key:'service',short:'Service call',kicker:'Troubleshooting',title:'“No hot water upstairs”',supplyOn:true,drainOn:true,psi:60,
  tools:['hand','pipe','valve','trap','cleanout','slope','erase'],systems:['cold','hot','drain','vent'],sizes:{cold:0.5,hot:0.75,drain:3,vent:1.5},
- intro:`<p>The homeowner's complaints: no hot water at the upstairs bath, the kitchen smells like sewer, there's a wet spot in the crawlspace, and the shower drain gurgles.</p><p>Nobody tells you where the problems are. Turn the water on, run fixtures, read the gauges and find <strong>every</strong> fault. Some won't show up in the inspector until you test.</p>`,
+ intro:`<p>The homeowner's complaints: no hot water at the upstairs bath, the kitchen smells like sewer, there's a wet spot in the basement, and the shower drain gurgles.</p><p>Nobody tells you where the problems are. Turn the water on, run fixtures, read the gauges and find <strong>every</strong> fault. Some won't show up in the inspector until you test.</p>`,
  hint:`Four faults to look for: a valve someone left closed, a fixture with no trap, a stub that sprays when pressurized, and a vent that stops short of the roof. The inspector also flags a flat section of building drain.`,
  setup(S){fullHouseFx(S);buildSample(S);setAttr(S,'hot',23,13,{v:'closed'});S.attrs.drain.delete(nid(29,19));
    for(let y=2;y<7;y++)S.edges.vent.delete(ek(nid(22,y),nid(22,y+1)));
-   for(let x=8;x<12;x++)S.edges.drain.get(ek(nid(x,24),nid(x+1,24))).slope=0;
-   run(S,'cold',.5,[[12,22],[12,19]]);},
+   for(let x=8;x<12;x++)S.edges.drain.get(ek(nid(x,29),nid(x+1,29))).slope=0;
+   run(S,'cold',.5,[[12,27],[12,19]]);},
  goals:[['Get hot water to the upstairs shower',(A,S)=>S.waterOn&&S.open.has('shower')&&A.fx.shower.hot.Q>0.5],
         ['Stop the sewer smell at the kitchen sink',(A)=>A.fx.kitchen.drain?.trap&&A.fx.kitchen.drain.vented],
         ['Water on with no leaks',(A,S)=>S.waterOn&&A.leaks.length===0],
@@ -498,66 +500,271 @@ const LESSONS=[
  intro:`<p>The owner wants a big window over the new vanity, so nothing can run through that wall. Two rules collide here.</p><p>The vent must join a 1½″ trap arm within <strong>6 ft</strong> of the trap. A dry vent also can't turn sideways until it's at least <strong>6 in above the flood rim</strong> of the fixture. Below that line a clog backs waste into the vent. The window blocks everything above the rim.</p>`,
  hint:`Arm length limits depend on the <em>arm</em> size, not the fixture. A 2″ arm may run 8 ft. Redraw the arm in 2″ far enough to clear the window, vent straight up there, and watch the pipe downstream: drains can never get smaller.`,
  setup(S){addFx(S,{id:'lav',type:'lav',x:10,y:9});block(S,11,4,18,8,'window');
-   run(S,'drain',1.5,[[11,10],[21,10]]);run(S,'drain',2,[[21,10],[21,24]]);run(S,'drain',3,[[21,24],[1,24]]);setAttr(S,'drain',11,10,{trap:true});},
+   run(S,'drain',1.5,[[11,10],[21,10]]);run(S,'drain',2,[[21,10],[21,29]]);run(S,'drain',3,[[21,29],[1,29]]);setAttr(S,'drain',11,10,{trap:true});},
  goals:[['Vent the lavatory within the allowed arm length',(A)=>A.fx.lav.drain?.vented],
         ['No sideways vent below the flood rim',(A)=>A.fx.lav.drain?.vented&&!A.issues.some(i=>i.title.startsWith('Vent runs sideways'))],
         ['No drain gets smaller downstream',(A)=>A.fx.lav.drain?.vented&&!A.issues.some(i=>i.title.startsWith('Drain gets smaller'))],
         ['Run the lavatory with zero drainage errors',(A,S)=>S.open.has('lav')&&A.dwvErrors===0]]},
-{key:'hilltop',short:'Hilltop',kicker:'Supply sizing · budget',title:'32 psi and a tight budget',supplyOn:true,drainOn:false,psi:32,budget:620,
+{key:'hilltop',short:'Hilltop',kicker:'Supply sizing · budget',title:'35 psi and a tight budget',supplyOn:true,drainOn:false,psi:35,budget:680,
  tools:['hand','pipe','valve','erase'],systems:['cold'],sizes:{cold:1},
- intro:`<p>A house at the top of the hill gets only <strong>32 psi</strong>. The bath is upstairs at the far end, and the toilet, tub and shower need <strong>20 psi</strong> each with all three running.</p><p>Pipe the whole thing in 1″ and the numbers work, but the owner's materials budget is <strong>$620</strong>. Big pipe only where the flow is big. Every foot and every fitting costs money.</p>`,
+ intro:`<p>A house at the top of the hill gets only <strong>35 psi</strong>. The bath is upstairs at the far end, and the toilet, tub and shower need <strong>20 psi</strong> each with all three running.</p><p>Pipe the whole thing in 1″ and the numbers work, but the owner's materials budget is <strong>$680</strong>. Big pipe only where the flow is big. Every foot and every fitting costs money.</p>`,
  hint:`Flow is highest from the meter to the first branch, so that's where 1″ pays off. Past each tee the flow drops: step down to ¾″ for the run along the ceiling and ½″ for the short drops. Keep the route short and avoid extra bends.`,
  setup(S){addFx(S,{id:'wc',type:'toilet',x:22,y:9});addFx(S,{id:'tub',type:'tub',x:26,y:10});addFx(S,{id:'shower',type:'shower',x:34,y:4});},
  goals:[['Supply all three fixtures with a main shutoff',(A,S)=>['wc','tub','shower'].every(i=>A.fx[i].coldConn)&&A.hasMain],
         ['All three open: each holds at least 20 psi',(A,S)=>S.waterOn&&allOpen(S,['wc','tub','shower'])&&['wc','tub','shower'].every(i=>(A.fx[i].cold.P??0)>=20)&&A.leaks.length===0],
         ['No pipe over 8 ft/s',(A,S)=>S.waterOn&&allOpen(S,['wc','tub','shower'])&&A.maxVel.cold<=8],
-        ['Materials at or under $620',(A)=>A.cost.total<=620&&A.adj.cold.size>0]]},
-{key:'twobath',short:'Two-bath exam',kicker:'Master exam',title:'Two baths, one stack, one budget',supplyOn:true,drainOn:true,psi:55,budget:1550,
+        ['Materials at or under $680',(A)=>A.cost.total<=680&&A.adj.cold.size>0]]},
+{key:'twobath',short:'Two-bath exam',kicker:'Master exam',title:'Two baths, one stack, one budget',supplyOn:true,drainOn:true,psi:55,budget:1760,
  tools:['hand','pipe','valve','trap','cleanout','slope','erase'],systems:['cold','hot','drain','vent'],sizes:{cold:0.75,hot:0.75,drain:3,vent:1.5},
- intro:`<p>Seven fixtures on 55 psi: a bath stacked over a bath, a tub upstairs, a kitchen and the water heater. Size the stack for the fixture units, keep every trap arm in range, and keep the supply quiet. No pipe over 8 ft/s with everything running.</p><p>Do it for <strong>$1550</strong> in materials or less. Stacking the baths so they share one drain and one vent is how pros keep the cost down.</p>`,
+ intro:`<p>Seven fixtures on 55 psi: a bath stacked over a bath, a tub upstairs, a kitchen and the water heater. Size the stack for the fixture units, keep every trap arm in range, and keep the supply quiet. No pipe over 8 ft/s with everything running.</p><p>Do it for <strong>$1760</strong> in materials or less. Stacking the baths so they share one drain and one vent is how pros keep the cost down.</p>`,
  hint:`Run one 3″ stack between the two toilets and continue it through the roof as the stack vent. Fixtures that tie into the stack below a vented section are vented through it. The supply will need 1″ from the meter to the riser to stay under 8 ft/s at peak.`,
  setup(S){twoBathFx(S);},
  goals:[['Supply, trap, vent and connect all seven fixtures',(A,S)=>A.heaterFed&&S.fixtures.every(f=>{const r=A.fx[f.id];return(!r.def.q||(r.coldConn&&(!r.def.hotFrac||r.hotConn)))&&(!r.def.dfu||(r.drain?.connected&&r.drain.vented));})],
         ['Inspector: zero errors',(A)=>A.errors===0&&A.adj.drain.size>0],
         ['Peak test with no pipe over 8 ft/s (5 hot)',(A,S)=>peak(A,S)&&A.maxVel.cold<=8&&A.maxVel.hot<=5],
-        ['Materials at or under $1550',(A)=>A.cost.total<=1550&&A.adj.drain.size>0]]},
+        ['Materials at or under $1760',(A)=>A.cost.total<=1760&&A.adj.drain.size>0]]},
 ];
 const peak=(A,S)=>S.waterOn&&A.leaks.length===0&&S.fixtures.every(f=>{const r=A.fx[f.id];if(!r.def.q)return true;if(!S.open.has(f.id))return false;return(r.cold.P??-1)>=r.def.pmin&&(!r.def.hotFrac||(r.hot.P??-1)>=r.def.pmin);});
 function twoBathFx(S){addFx(S,{id:'wc2',type:'toilet',x:14,y:9,label:'Upstairs toilet'});addFx(S,{id:'lav2',type:'lav',x:18,y:9,label:'Upstairs lav'});addFx(S,{id:'tub',type:'tub',x:24,y:10});
   addFx(S,{id:'heater',type:'heater',x:6,y:16});addFx(S,{id:'wc1',type:'toilet',x:12,y:18,label:'Downstairs toilet'});addFx(S,{id:'lav1',type:'lav',x:19,y:18,label:'Downstairs lav'});addFx(S,{id:'kitchen',type:'kitchen',x:28,y:18});}
 function buildTwoBath(S,main){
-  run(S,'cold',main,[[4,22],[24,22]]);run(S,'cold',.75,[[24,22],[30,22]]);setAttr(S,'cold',5,22,{v:'open'});
-  run(S,'cold',.75,[[8,22],[8,15],[7,15]]);setAttr(S,'cold',8,16,{v:'open'});
-  run(S,'cold',.5,[[30,22],[30,19]]);run(S,'cold',.5,[[12,22],[12,20]]);run(S,'cold',.5,[[21,22],[21,19]]);
-  run(S,'cold',.75,[[24,22],[24,13]]);run(S,'cold',.75,[[14,13],[25,13]]);
+  run(S,'cold',main,[[4,27],[24,27]]);run(S,'cold',.75,[[24,27],[30,27]]);setAttr(S,'cold',5,27,{v:'open'});
+  run(S,'cold',.75,[[8,27],[8,15],[7,15]]);setAttr(S,'cold',8,16,{v:'open'});
+  run(S,'cold',.5,[[30,27],[30,19]]);run(S,'cold',.5,[[12,27],[12,20]]);run(S,'cold',.5,[[21,27],[21,19]]);
+  run(S,'cold',.75,[[24,27],[24,13]]);run(S,'cold',.75,[[14,13],[25,13]]);
   run(S,'cold',.5,[[14,13],[14,11]]);run(S,'cold',.5,[[20,13],[20,10]]);run(S,'cold',.5,[[25,13],[25,9]]);
   run(S,'hot',.75,[[6,15],[6,14],[28,14]]);run(S,'hot',.5,[[28,14],[28,19]]);run(S,'hot',.5,[[19,14],[19,19]]);run(S,'hot',.75,[[23,14],[23,13]]);run(S,'hot',.75,[[18,13],[24,13]]);
   run(S,'hot',.5,[[18,13],[18,10]]);run(S,'hot',.5,[[24,13],[24,9]]);
   setAttr(S,'drain',19,10,{trap:true});run(S,'drain',1.5,[[19,10],[16,10]]);run(S,'drain',2,[[16,10],[16,12]]);run(S,'drain',3,[[15,12],[16,12]]);
-  run(S,'drain',3,[[16,12],[16,24],[1,24]]);run(S,'vent',2,[[16,10],[16,2]]);
+  run(S,'drain',3,[[16,12],[16,29],[1,29]]);run(S,'vent',2,[[16,10],[16,2]]);
   setAttr(S,'drain',24,12,{trap:true});run(S,'drain',1.5,[[24,12],[17,12]]);run(S,'drain',3,[[17,12],[16,12]]);run(S,'vent',1.5,[[22,12],[22,2]]);
-  run(S,'drain',3,[[13,21],[13,23],[16,23]]);
-  setAttr(S,'drain',20,19,{trap:true});run(S,'drain',1.5,[[20,19],[22,19]]);run(S,'vent',1.5,[[22,19],[22,12]]);run(S,'drain',2,[[22,19],[22,24],[17,24]]);run(S,'drain',3,[[17,24],[16,24]]);
-  setAttr(S,'drain',29,19,{trap:true});run(S,'drain',1.5,[[29,19],[31,19]]);run(S,'vent',1.5,[[31,19],[31,2]]);run(S,'drain',2,[[31,19],[31,24],[22,24]]);
+  run(S,'drain',3,[[13,21],[13,28],[16,28]]);
+  setAttr(S,'drain',20,19,{trap:true});run(S,'drain',1.5,[[20,19],[22,19]]);run(S,'vent',1.5,[[22,19],[22,12]]);run(S,'drain',2,[[22,19],[22,29],[17,29]]);run(S,'drain',3,[[17,29],[16,29]]);
+  setAttr(S,'drain',29,19,{trap:true});run(S,'drain',1.5,[[29,19],[31,19]]);run(S,'vent',1.5,[[31,19],[31,2]]);run(S,'drain',2,[[31,19],[31,29],[22,29]]);
 }
-function buildHill(S){run(S,'cold',1,[[4,22],[32,22],[32,13]]);setAttr(S,'cold',5,22,{v:'open'});run(S,'cold',.75,[[22,13],[36,13]]);
+function buildHill(S){run(S,'cold',1,[[4,27],[32,27],[32,13]]);setAttr(S,'cold',5,27,{v:'open'});run(S,'cold',.75,[[22,13],[36,13]]);
   run(S,'cold',.5,[[22,13],[22,11]]);run(S,'cold',.5,[[27,13],[27,9]]);run(S,'cold',.5,[[36,13],[36,8]]);}
 
 function fullHouseFx(S){addFx(S,{id:'wc',type:'toilet',x:14,y:9});addFx(S,{id:'lav',type:'lav',x:18,y:9});addFx(S,{id:'shower',type:'shower',x:25,y:4});
   addFx(S,{id:'heater',type:'heater',x:6,y:16});addFx(S,{id:'kitchen',type:'kitchen',x:28,y:18});}
 function buildSample(S){
-  run(S,'cold',.75,[[4,22],[30,22]]);setAttr(S,'cold',5,22,{v:'open'});
-  run(S,'cold',.75,[[8,22],[8,15],[7,15]]);setAttr(S,'cold',8,16,{v:'open'});
-  run(S,'cold',.5,[[30,22],[30,19]]);run(S,'cold',.75,[[24,22],[24,13]]);run(S,'cold',.75,[[14,13],[27,13]]);
+  run(S,'cold',.75,[[4,27],[30,27]]);setAttr(S,'cold',5,27,{v:'open'});
+  run(S,'cold',.75,[[8,27],[8,15],[7,15]]);setAttr(S,'cold',8,16,{v:'open'});
+  run(S,'cold',.5,[[30,27],[30,19]]);run(S,'cold',.75,[[24,27],[24,13]]);run(S,'cold',.75,[[14,13],[27,13]]);
   run(S,'cold',.5,[[14,13],[14,11]]);run(S,'cold',.5,[[20,13],[20,10]]);run(S,'cold',.5,[[27,13],[27,8]]);
   run(S,'hot',.75,[[6,15],[6,14],[28,14]]);run(S,'hot',.5,[[28,14],[28,19]]);run(S,'hot',.75,[[23,14],[23,13]]);run(S,'hot',.75,[[18,13],[25,13]]);
   run(S,'hot',.5,[[18,13],[18,10]]);run(S,'hot',.5,[[25,13],[25,8]]);
   setAttr(S,'drain',19,10,{trap:true});run(S,'drain',1.5,[[19,10],[16,10]]);run(S,'drain',2,[[16,10],[16,12]]);run(S,'drain',3,[[15,12],[16,12]]);
-  run(S,'drain',3,[[16,12],[16,24],[1,24]]);run(S,'vent',2,[[16,10],[16,2]]);
+  run(S,'drain',3,[[16,12],[16,29],[1,29]]);run(S,'vent',2,[[16,10],[16,2]]);
   setAttr(S,'drain',26,12,{trap:true});run(S,'drain',2,[[26,12],[17,12]]);run(S,'drain',3,[[17,12],[16,12]]);run(S,'vent',1.5,[[22,12],[22,2]]);
-  setAttr(S,'drain',29,19,{trap:true});run(S,'drain',1.5,[[29,19],[31,19]]);run(S,'vent',1.5,[[31,19],[31,2]]);run(S,'drain',2,[[31,19],[31,24],[17,24]]);run(S,'drain',3,[[17,24],[16,24]]);
+  setAttr(S,'drain',29,19,{trap:true});run(S,'drain',1.5,[[29,19],[31,19]]);run(S,'vent',1.5,[[31,19],[31,2]]);run(S,'drain',2,[[31,19],[31,29],[17,29]]);run(S,'drain',3,[[17,29],[16,29]]);
 }
-if(typeof module!=='undefined')module.exports={buildTwoBath,twoBathFx,buildHill,newState,baseFx,LESSONS,analyze,buildSample,fullHouseFx,run,setAttr,block,addFx,addEdge,nid,ek};
+
+/* ================= BOILER LAB ENGINE ================= */
+Object.assign(FX,{
+  chimney:{name:'Chimney',w:3,h:20,ports:[{sys:'flue',dx:3,dy:6}],fixed:true},
+  boiler:{name:'Oil boiler',w:4,h:9,fixed:true,ports:[{sys:'flue',dx:1,dy:-1,role:'flue'},{sys:'hsup',dx:3,dy:-1,role:'sup'},{sys:'hret',dx:4,dy:6,role:'ret'},{sys:'dev',dx:4,dy:1,role:'relief'},{sys:'cold',dx:0,dy:-1,role:'fill'},{sys:'oil',dx:-1,dy:3,role:'burner'}]},
+  oiltank:{name:'Oil tank',w:6,h:5,fixed:true,ports:[{sys:'oil',dx:-1,dy:3}]},
+  indirect:{name:'Indirect tank',w:3,h:8,fixed:true,ports:[{sys:'hsup',dx:3,dy:1,role:'in'},{sys:'hret',dx:3,dy:6,role:'out'},{sys:'cold',dx:0,dy:-1,role:'cin'},{sys:'hot',dx:2,dy:-1,role:'hout'}]},
+  mixer:{name:'Mixing valve',w:1,h:1,fixed:true,ports:[{sys:'hot',dx:-1,dy:0,role:'H'},{sys:'cold',dx:1,dy:0,role:'C'},{sys:'mixed',dx:0,dy:-1,role:'MIX'}]},
+  cmain:{name:'Cold main',w:1,h:1,fixed:true,ports:[{sys:'cold',dx:-1,dy:0}]},
+  hhot:{name:'House hot',w:1,h:1,fixed:true,ports:[{sys:'mixed',dx:-1,dy:0}]},
+  zone:{name:'Zone',w:4,h:3,fixed:true,ports:[{sys:'hsup',dx:0,dy:3,role:'in'},{sys:'hret',dx:3,dy:3,role:'out'}]},
+});
+const DEVS={circ:{label:'Circulator',layers:['hsup','hret']},airsep:{label:'Air separator',layers:['hsup']},hxt:{label:'Expansion tank',layers:['hsup','hret']},relief:{label:'Relief valve',layers:['hsup']},
+  bfp:{label:'Backflow preventer',layers:['cold']},fillv:{label:'Fill valve',layers:['cold']},check:{label:'Check valve',layers:['cold']},filter:{label:'Oil filter',layers:['oil']},firo:{label:'Firomatic',layers:['oil']},baro:{label:'Baro damper',layers:['flue']}};
+const NOZZLES=[0.5,0.6,0.65,0.75,0.85,1.0];
+const ZONES=[{id:'z1',name:'Living & dining',load:24000,bb:54},{id:'z2',name:'Kitchen & family',load:18000,bb:42},{id:'z3',name:'Bedrooms',load:20000,bb:46},{id:'z4',name:'Baths & office',load:10000,bb:24}];
+const DESIGN_LOAD=ZONES.reduce((a,z)=>a+z.load,0);
+const BH=26,B_SLAB=24;
+function boilerFx(S){
+  S.scene='boiler';
+  S.fixtures.push({id:'chimney',type:'chimney',x:0,y:4},{id:'boiler',type:'boiler',x:6,y:15},{id:'oiltank',type:'oiltank',x:32,y:19},{id:'ind',type:'indirect',x:15,y:16,label:'Indirect tank'},
+    {id:'mixer',type:'mixer',x:20,y:8},{id:'cmain',type:'cmain',x:39,y:13},{id:'hhot',type:'hhot',x:39,y:7});
+  ZONES.forEach((z,i)=>S.fixtures.push({id:z.id,type:'zone',x:12+6*i,y:0,label:`Zone ${i+1}: ${z.name}`,load:z.load,bb:z.bb}));}
+function bFuel(S){run(S,'oil',.375,[[31,22],[31,23],[4,23],[4,18],[5,18]]);setAttr(S,'oil',28,23,{v:'filter'});setAttr(S,'oil',4,19,{v:'firo'});
+  run(S,'flue',6,[[7,14],[7,10],[3,10]]);setAttr(S,'flue',5,10,{v:'baro'});}
+function bNear(S){run(S,'hsup',1.25,[[9,14],[9,12],[31,12]]);setAttr(S,'hsup',9,13,{v:'airsep'});setAttr(S,'hsup',10,12,{v:'hxt'});setAttr(S,'hsup',10,16,{v:'relief'});
+  run(S,'hret',1.25,[[33,5],[11,5],[11,22]]);run(S,'hret',1.25,[[11,21],[10,21]]);
+  run(S,'cold',.75,[[38,13],[37,13],[37,14],[6,14]]);setAttr(S,'cold',12,14,{v:'bfp'});setAttr(S,'cold',8,14,{v:'fillv'});}
+function bZones(S){for(const x of[12,18,24,30]){run(S,'hsup',.75,[[x,12],[x,3]]);setAttr(S,'hsup',x,10,{v:'circ',ifc:true});run(S,'hret',.75,[[x+3,3],[x+3,5]]);}}
+function bDHW(S){run(S,'hsup',1,[[18,12],[18,17]]);setAttr(S,'hsup',18,15,{v:'circ',ifc:true});run(S,'hret',1,[[18,22],[11,22]]);
+  run(S,'cold',.75,[[15,14],[15,15]]);run(S,'cold',.5,[[21,14],[21,8]]);setAttr(S,'cold',21,10,{v:'check'});
+  run(S,'hot',.75,[[17,15],[17,8],[19,8]]);run(S,'mixed',.75,[[20,7],[20,6],[38,6],[38,7]]);}
+const hwH=(q,d)=>q<=0?0:4.52*Math.pow(q,1.85)/(Math.pow(150,1.85)*Math.pow(d,4.87)); // psi/ft, C=150 hot water
+const pumpHead=Q=>10*(1-Math.pow(Math.max(0,Q)/16,1.9));                             // wet-rotor circulator curve, ft
+function analyzeBoiler(S){
+  const A={issues:[],fx:{},anim:[],leaks:[],spray:[],spills:[],ventTerm:[],badEdges:new Set(),drainDir:new Map(),maxVel:{cold:0,hot:0},vel:new Map(),PC:new Map(),PH:new Map(),PSC:new Map(),PSH:new Map(),circuits:[],slopeErrors:0};
+  const adj={};SYSTEMS.forEach(s=>adj[s]=adjOf(S,s));A.adj=adj;A.cost=costOf(S,adj);
+  const ck=new Set(S.checks||['fuel','near','zones','dhw']);A.ck=ck;
+  const issue=(sev,cat,title,detail,code,node)=>{if(ck.has(cat))A.issues.push({sev,cat,title,detail,code,node});};
+  const get=id=>S.fixtures.find(f=>f.id===id);
+  const P=(f,role)=>portNode(f,FX[f.type].ports.find(p=>p.role===role)||FX[f.type].ports[0]);
+  const att=(sys,n)=>S.attrs[sys].get(n);
+  const pathTo=(T,n)=>{if(n==null||!T.dist.has(n))return null;const p=[];let m=n;while(m!==undefined){p.push(m);m=T.parent.get(m);}return p.reverse();};
+  for(const f of S.fixtures)A.fx[f.id]={f,def:FX[f.type],running:false};
+  const boiler=get('boiler'),tank=get('oiltank'),chim=get('chimney'),ind=get('ind'),mix=get('mixer'),cmain=get('cmain'),hhot=get('hhot');
+  /* fuel & flue */
+  const burner=P(boiler,'burner'),TO=bfs(adj.oil,P(tank),null),op=pathTo(TO,burner);
+  A.oilOK=!!op;A.filter=!!op&&op.some(n=>att('oil',n)?.v==='filter');A.firo=!!op&&op.slice(-4).some(n=>att('oil',n)?.v==='firo');
+  const TF=bfs(adj.flue,P(boiler,'flue'),null),fp=pathTo(TF,P(chim));
+  A.flueOK=!!fp;A.baro=!!fp&&fp.some(n=>att('flue',n)?.v==='baro');
+  if(fp)for(let i=1;i<fp.length;i++)if(ny(fp[i])>ny(fp[i-1])){A.flueDown=fp[i];A.badEdges.add(ek(fp[i-1],fp[i]));break;}
+  A.input=S.nozzle*140000;A.output=Math.round(A.input*0.85);A.sizeRatio=A.output/DESIGN_LOAD;
+  if(!A.oilOK)issue('err','fuel','Burner has no oil line','Run ⅜″ oil line from the tank outlet to the burner’s fuel pump.','NFPA 31',burner);
+  else{if(!A.filter)issue('err','fuel','No oil filter','Sludge from the tank bottom will plug the nozzle and strainer. Put a filter on the oil line.','NFPA 31',burner);
+    if(!A.firo)issue('err','fuel','No firomatic valve at the burner','A heat-actuated (fusible) valve within a few feet of the burner shuts the oil off in a fire. Massachusetts requires one.','527 CMR · NFPA 31',burner);}
+  if(!A.flueOK)issue('err','fuel','Flue not connected to the chimney','Combustion gas, including carbon monoxide, would spill into the basement.','IRC M1803',P(boiler,'flue'));
+  else{if(!A.baro)issue('err','fuel','No barometric draft regulator','Chimney draft changes with the weather. Without a baro damper the burner’s draft, and its efficiency and soot, drift all season.','Burner mfr. · NFPA 31',P(boiler,'flue'));
+    if(A.flueDown!=null)issue('err','fuel','Flue connector slopes down','The connector has to rise toward the chimney the whole way so hot gas keeps moving up and out.','IRC M1803',A.flueDown);}
+  if(A.sizeRatio>1.4)issue('warn','fuel','Burner oversized',`${A.output.toLocaleString()} BTU/h output against a ${DESIGN_LOAD.toLocaleString()} BTU/h load. It will short-cycle, soot up and waste oil. Pick a smaller nozzle.`,'Manual J / burner mfr.',burner);
+  /* near-boiler */
+  const sup=P(boiler,'sup'),ret=P(boiler,'ret'),fill=P(boiler,'fill'),relief=P(boiler,'relief');
+  A.relief=att('hsup',relief)?.v==='relief';
+  const TCd=bfs(adj.cold,P(cmain),null),fillP=pathTo(TCd,fill);
+  A.fillConn=!!fillP;A.bfp=!!fillP&&fillP.some(n=>att('cold',n)?.v==='bfp');A.fillv=!!fillP&&fillP.some(n=>att('cold',n)?.v==='fillv');
+  A.filled=A.fillConn&&A.fillv;A.psi=A.filled?12:A.fillConn?60:0;
+  const TS=bfs(adj.hsup,sup,null),TR=bfs(adj.hret,ret,null);A.retPiped=adj.hret.has(ret);
+  const supDev=v=>TS.order.filter(n=>att('hsup',n)?.v===v);
+  A.airsepN=supDev('airsep')[0];A.airsep=A.airsepN!=null;
+  A.hxtN=supDev('hxt')[0]??TR.order.find(n=>att('hret',n)?.v==='hxt');A.hxt=A.hxtN!=null;
+  if(!A.relief)issue('err','near','No relief valve on the boiler','Every hot-water boiler needs a 30 psi ASME relief valve in its tapping, piped down to within 6″ of the floor.','IRC M2002',relief);
+  if(!A.fillConn)issue('warn','near','Boiler can’t be filled','Tie the boiler fill into the domestic cold water.','',fill);
+  else{if(!A.bfp)issue('err','near','Cross-connection: no backflow preventer','Boiler water is not drinkable. A backflow preventer on the fill keeps it from siphoning back into the house water.','IRC P2902',fill);
+    if(!A.fillv)issue('err','near','No pressure-reducing fill valve','Street pressure would push the system past the 30 psi relief valve. Feed through a fill valve set to 12 psi.','Boiler mfr.',fill);}
+  if(adj.hsup.size&&!A.airsep)issue('err','near','No air separator','Air comes out of solution in the boiler and collects in the zones, which gurgle and go cold. Put an air separator with a vent on the supply.','Boiler mfr.',sup);
+  if(adj.hsup.size&&!A.hxt)issue('err','near','No expansion tank','Water grows about 4% from 50°F to 180°F. With no tank, pressure climbs to 30 psi and the relief valve dumps every cycle.','IRC M2003',sup);
+  if(adj.hsup.size&&!A.retPiped)issue('err','near','Return not piped to the boiler','The loop has to come back into the boiler’s return tapping.','',ret);
+  /* circuits */
+  const loads=S.fixtures.filter(f=>f.type==='zone'||f.type==='indirect');
+  const circs=loads.map(f=>{const inN=P(f,'in'),outN=P(f,'out'),sp=pathTo(TS,inN),rp=pathTo(TR,outN);
+    const pumps=[];if(sp)sp.forEach(n=>{const a=att('hsup',n);if(a?.v==='circ')pumps.push('S'+n);});if(rp)rp.forEach(n=>{const a=att('hret',n);if(a?.v==='circ')pumps.push('R'+n);});
+    return{f,id:f.id,dhw:f.type==='indirect',sp,rp,pumps,piped:!!(sp&&rp),q:0,del:0};});
+  A.circuits=circs;
+  const pumpMap=new Map();circs.forEach(c=>c.pumps.forEach(k=>{if(!pumpMap.has(k))pumpMap.set(k,[]);pumpMap.get(k).push(c);}));
+  const pumpAttr=k=>att(k[0]==='S'?'hsup':'hret',+k.slice(1));
+  const dhwCall=circs.some(c=>c.dhw&&S.open.has(c.id));
+  const wants=c=>S.open.has(c.id)&&!(S.priority&&dhwCall&&!c.dhw);
+  const canRun=S.power&&A.filled;
+  const running=new Set([...pumpMap.keys()].filter(k=>canRun&&pumpMap.get(k).some(wants)));
+  for(const c of circs){c.active=c.piped&&c.pumps.some(k=>running.has(k));
+    c.ghost=!c.active&&c.piped&&running.size>0&&c.pumps.every(k=>!pumpAttr(k)?.ifc)&&!c.pumps.some(k=>running.has(k));}
+  // hydraulic solve
+  const edgesOf=c=>{const L=[];const add=(sys,path,pre)=>{for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],e=S.edges[sys].get(ek(a,b));const turn=i>=2&&(b-a)!==(a-path[i-2]);L.push({k:pre+ek(a,b),sys,a,b,size:e.size,eq:1+(turn?2.5:0)});}};add('hsup',c.sp,'S');add('hret',c.rp,'R');return L;};
+  const flowC=circs.filter(c=>c.active||c.ghost);flowC.forEach(c=>{c.E=edgesOf(c);c.q=c.ghost?0.6:3;});
+  const term=c=>c.dhw?5*(c.q/7)**2:2.31*hwH(c.q,ID[0.75])*(c.f.bb*1.3+6);
+  let eq=new Map();
+  const edgeFlows=()=>{eq=new Map();for(const c of flowC)for(const e of c.E)eq.set(e.k,(eq.get(e.k)||0)+c.q);};
+  for(let it=0;it<400;it++){edgeFlows();const Qt=flowC.reduce((a,c)=>a+c.q,0);
+    for(const c of flowC){if(c.ghost)continue;let loss=term(c)+1.5*(Qt/20)**2;for(const e of c.E)loss+=2.31*hwH(eq.get(e.k),ID[e.size])*e.eq;
+      let head=0;for(const k of c.pumps)if(running.has(k)){const Qp=pumpMap.get(k).filter(x=>x.active).reduce((a,x)=>a+x.q,0);head+=pumpHead(Qp);}
+      c.q=Math.max(0.05,Math.min(25,c.q*Math.pow(Math.max(0.05,head)/Math.max(0.05,loss),0.2)));}
+    const act=flowC.filter(c=>!c.ghost);const avg=act.length?act.reduce((a,c)=>a+c.q,0)/act.length:0;flowC.filter(c=>c.ghost).forEach(c=>c.q=0.15*avg);}
+  edgeFlows();
+  let vmax=0,vNode=null,vSize=0;
+  for(const c of flowC)for(const e of c.E){const v=0.4085*eq.get(e.k)/(ID[e.size]**2);A.vel.set(e.k,v);const lim=e.size<=1?4:5;if(v/lim>vmax){vmax=v/lim;vNode=e.b;vSize=e.size;A.vmaxV=v;}}
+  A.velOK=vmax<=1;
+  // thermal solve
+  A.firing=S.power&&A.oilOK&&A.flueOK&&(ck.has('near')?A.filled:true)&&((ck.has('zones')||ck.has('dhw'))?flowC.some(c=>c.active):true);
+  const Qb=A.firing?A.output:0;
+  const deliver=(c,Ts)=>{if(!c.q)return 0;let d=c.dhw?50000:c.f.load;for(let i=0;i<40;i++){const awt=Ts-d/(1000*c.q);
+      const cap=c.dhw?95000*Math.max(0,(awt-100)/80)*Math.min(1,Math.pow(c.q/7,0.35)):c.f.bb*550*Math.pow(Math.max(0,(awt-65)/115),1.31);
+      const nd=c.dhw||c.ghost?cap:Math.min(c.f.load,cap);d=0.5*d+0.5*nd;}return d;};
+  const total=Ts=>flowC.reduce((a,c)=>a+deliver(c,Ts),0);
+  let Ts=Qb>0?180:68;
+  if(Qb>0&&total(180)>Qb){let lo=60,hi=180;for(let i=0;i<40;i++){const m=(lo+hi)/2;if(total(m)>Qb)hi=m;else lo=m;}Ts=(lo+hi)/2;}
+  A.Ts=Ts;let sumD=0,sumQ=0;
+  for(const c of circs){c.del=(flowC.includes(c)&&Qb>0)?deliver(c,Ts):0;c.dT=c.q>0.01?c.del/(500*c.q):0;sumD+=c.del;sumQ+=c.q||0;
+    if(!c.dhw){c.room=c.active?Math.min(70,70*c.del/c.f.load):c.ghost&&c.del>0?70+Math.min(8,c.del/c.f.load*6):null;}A.fx[c.id].running=c.active;}
+  A.Tr=sumQ>0?Ts-sumD/(500*sumQ):Ts;A.fx.boiler.running=A.firing;
+  // zone issues
+  for(const c of circs){const nm=fxName(c.f),cat=c.dhw?'dhw':'zones',n=P(c.f,'in');
+    if(!c.piped){issue('err',cat,`${nm}: not piped`,`Run boiler supply to the left port and return from the right port.`,'',n);continue;}
+    if(!c.pumps.length){issue('err',cat,`${nm}: no circulator`,'Nothing pushes water through this loop. Put a circulator on its supply, downstream of the expansion tank.','',n);continue;}
+    const shared=c.pumps.filter(k=>pumpMap.get(k).length>1);
+    if(shared.length)issue('warn',cat,`${nm} shares a circulator`,'With one pump and no zone valves, every loop heats whenever any thermostat calls. Give each zone its own circulator.','',+shared[0].slice(1));
+    else if(c.pumps.some(k=>!pumpAttr(k)?.ifc)&&circs.filter(x=>x.piped).length>1)issue('warn',cat,`${nm}: ghost flow`,'When another zone runs, water sneaks through this idle loop and overheats the room. Use a circulator with an integral flow check (IFC).','',+c.pumps[0].slice(1));
+    if(A.hxtN!=null&&c.sp){for(const k of c.pumps){if(k[0]!=='S')continue;const pi=c.sp.indexOf(+k.slice(1)),ti=c.sp.indexOf(A.hxtN);if(ti>pi&&pi>=0){issue('warn','near','Circulator pumping toward the expansion tank','The pump should push away from the point where the tank connects. Pumping toward it drops pressure at the pump inlet, so air flashes out and zones get noisy.','',+k.slice(1));break;}}}
+    if(A.airsepN!=null&&c.sp)for(const k of c.pumps){if(k[0]!=='S')continue;if(c.sp.indexOf(+k.slice(1))<c.sp.indexOf(A.airsepN)){issue('warn','near','Circulator ahead of the air separator','Air separators work at the hottest, lowest-pressure point, right after the boiler and before the pumps.','',+k.slice(1));break;}}
+    if(!c.dhw&&c.active&&A.firing&&c.del<0.97*c.f.load)issue('warn','zones',`${nm} can’t keep up`,`Delivering ${Math.round(c.del).toLocaleString()} of ${c.f.load.toLocaleString()} BTU/h on a design day: the room settles at ${Math.round(c.room)}°F. More flow, hotter water or a bigger nozzle.`,'',n);}
+  if(!A.velOK&&vNode!=null)issue('warn','zones','Hydronic velocity too high',`${A.vmaxV.toFixed(1)} ft/s in ${sz(vSize)} pipe. Above about ${vSize<=1?4:5} ft/s, hot-water piping whistles and erodes. Upsize that run.`,'ASHRAE guideline',vNode);
+  if(A.firing&&Ts<140&&flowC.some(c=>c.active))issue('warn','zones','Boiler running too cool',`Supply is only ${Math.round(Ts)}°F. Flue gas condenses in a cast-iron oil boiler below ~140°F, and the acid eats the sections and chimney liner.`,'Boiler mfr.',sup);
+  /* domestic hot water */
+  const cin=P(ind,'cin'),hout=P(ind,'hout'),mH=P(mix,'H'),mC=P(mix,'C'),mM=P(mix,'MIX'),house=P(hhot);
+  const tankP=pathTo(TCd,cin),cP=pathTo(TCd,mC);A.tankCold=!!tankP;A.mixC=!!cP;
+  const tset=new Set(tankP||[]);A.mixCheck=!!cP&&cP.filter(n=>!tset.has(n)).some(n=>att('cold',n)?.v==='check');
+  const TH=bfs(adj.hot,hout,null);A.mixH=TH.dist.has(mH);A.hotToHouse=adj.hot.has(house)&&TH.dist.has(house);
+  const TM=bfs(adj.mixed,mM,null);A.mixToHouse=TM.dist.has(house);
+  const dc=circs.find(c=>c.dhw);A.coilWorks=!!dc&&dc.piped&&dc.pumps.length>0&&S.power&&A.oilOK&&A.flueOK&&A.filled;
+  A.tankT=A.tankCold&&A.coilWorks?140:55;A.recovery=dc&&dc.del>0?dc.del/(8.33*90):0;A.coilQ=dc?.q||0;A.coilDel=dc?.del||0;
+  A.tapT=A.hotToHouse?A.tankT:!A.mixToHouse?null:!A.mixH?55:!A.mixC?A.tankT:Math.min(A.tankT,S.mixSet);
+  if(!A.tankCold)issue('err','dhw','Indirect tank has no cold supply','Run domestic cold to the tank’s cold inlet.','',cin);
+  if(A.hotToHouse)issue('err','dhw','Tank hot goes straight to the house','The tank is held at 140°F to keep Legionella out. That scalds in under 5 seconds at a tap. Run it through the mixing valve.','ASSE 1017',house);
+  else if(!A.mixToHouse)issue('err','dhw','No tempered water to the house','Pipe the mixing valve’s MIX outlet to the house hot line.','',mM);
+  if(!A.mixH)issue('err','dhw','Mixing valve has no hot inlet','Run the tank’s hot outlet to the valve’s H port.','',mH);
+  if(!A.mixC)issue('err','dhw','Mixing valve has no cold inlet','Without cold to blend in, the valve passes 140°F straight through.','ASSE 1017',mC);
+  else if(!A.mixCheck)issue('warn','dhw','No check valve on the mixer’s cold inlet','When a hot tap runs, hot water can push backward through the mixer into the cold line. Add a check valve on the cold branch.','Valve mfr.',mC);
+  if(S.mixSet>120&&A.mixToHouse)issue('warn','dhw','Mixing valve set above 120°F',`Set to ${S.mixSet}°F. Above 120°F, water can scald a child in seconds. Turn it down.`,'ASSE 1017',mM);
+  /* animation */
+  if(A.firing&&op){for(let i=1;i<op.length;i++)A.anim.push({sys:'oil',a:op[i-1],b:op[i],v:.6});}
+  if(A.firing&&fp){for(let i=1;i<fp.length;i++)A.anim.push({sys:'flue',a:fp[i-1],b:fp[i],v:2});}
+  for(const c of flowC){for(let i=1;i<c.sp.length;i++)A.anim.push({sys:'hsup',a:c.sp[i-1],b:c.sp[i],v:c.q*.7});for(let i=c.rp.length-1;i>0;i--)A.anim.push({sys:'hret',a:c.rp[i],b:c.rp[i-1],v:c.q*.7});}
+  if(S.open.has('ind')){const an=(T,sys,to)=>{const p=pathTo(T,to);if(p)for(let i=1;i<p.length;i++)A.anim.push({sys,a:p[i-1],b:p[i],v:2});};
+    an(TCd,'cold',cin);an(TCd,'cold',mC);an(TH,'hot',mH);an(TM,'mixed',house);if(A.hotToHouse)an(TH,'hot',house);}
+  A.errors=A.issues.filter(i=>i.sev==='err').length;A.warns=A.issues.filter(i=>i.sev==='warn').length;
+  return A;}
+const zonesHot=(A,S)=>S.power&&ZONES.every(z=>S.open.has(z.id))&&A.circuits.filter(c=>!c.dhw).every(c=>c.active&&c.del>=0.97*c.f.load);
+const showerOK=(A,S)=>S.open.has('ind')&&S.power&&A.tapT===120&&A.recovery>=100;
+const BLAB=[
+{key:'b-fuel',short:'Fuel & flue',kicker:'Oil burner',title:'Fire the burner',scene:'boiler',checks:['fuel'],nozzle:0.5,
+ tools:['hand','pipe','dev','erase'],systems:['oil','flue'],devices:['filter','firo','baro'],sizes:{oil:.375,flue:6},
+ intro:`<p>This is the basement boiler room. The cast-iron boiler burns #2 heating oil from the 275-gallon tank and vents through the masonry chimney on the left.</p><p>Burner size is set by its <strong>nozzle</strong>: each gallon per hour burns about <strong>140,000 BTU</strong>, and the boiler turns roughly 85% of that into hot water. The house loses <strong>72,000 BTU/h</strong> on a 0°F design day.</p>`,
+ hint:`Oil: drag from the tank outlet along the floor and up to the burner on the boiler’s left side. Add an <strong>Oil filter</strong> near the tank and a <strong>Firomatic</strong> within 3 ft of the burner. Flue: from the boiler top straight up, then over to the chimney thimble, with a <strong>Baro damper</strong> on the horizontal run. A 0.65 or 0.75 gph nozzle fits the load.`,
+ setup(S){},
+ goals:[['Oil line with a filter and a firomatic at the burner',(A)=>A.oilOK&&A.filter&&A.firo],
+        ['Flue rises to the chimney with a barometric damper',(A)=>A.flueOK&&A.baro&&A.flueDown==null],
+        ['Nozzle output is 100–130% of the 72,000 BTU/h load',(A)=>A.sizeRatio>=1&&A.sizeRatio<=1.3],
+        ['Power on: the burner lights',(A)=>A.firing]]},
+{key:'b-near',short:'Near-boiler',kicker:'Boiler piping',title:'Pipe the boiler',scene:'boiler',checks:['fuel','near'],nozzle:0.75,
+ tools:['hand','pipe','dev','erase'],systems:['hsup','hret','cold'],devices:['airsep','hxt','relief','bfp','fillv'],sizes:{hsup:1.25,hret:1.25,cold:.75},
+ intro:`<p>A hot-water boiler is a closed loop held at about <strong>12 psi</strong>, enough to lift water to the top floor with a few psi to spare. It needs four things before it's safe to fire:</p><p>an <strong>air separator</strong> on the supply, an <strong>expansion tank</strong> to absorb the 4% the water grows when heated, a <strong>30 psi relief valve</strong>, and a fill line from the house cold water through a <strong>backflow preventer</strong> and a <strong>fill valve</strong>.</p>`,
+ hint:`Supply: 1¼″ up from the boiler’s supply tapping to a header along the basement at ceiling height, with the air separator on the riser and the expansion tank just after it. Return: 1¼″ across the top and down into the boiler’s return. Fill: ¾″ cold from the cold main over to the fill port on the boiler top, with a backflow preventer and a fill valve. Click the relief socket on the boiler’s right side with <strong>Relief valve</strong>.`,
+ setup(S){bFuel(S);},
+ goals:[['Supply header leaves through an air separator',(A)=>A.airsep],
+        ['Expansion tank on the boiler piping',(A)=>A.hxt],
+        ['30 psi relief valve on the boiler',(A)=>A.relief],
+        ['Fill from the cold main through a backflow preventer and a fill valve',(A)=>A.fillConn&&A.bfp&&A.fillv],
+        ['Return header piped back into the boiler',(A)=>A.retPiped&&A.errors===0]]},
+{key:'b-zones',short:'Four zones',kicker:'Hydronic zoning',title:'Heat four zones',scene:'boiler',checks:['fuel','near','zones'],nozzle:0.75,
+ tools:['hand','pipe','dev','erase'],systems:['hsup','hret'],devices:['circ'],sizes:{hsup:.75,hret:.75},
+ intro:`<p>Upstairs are four zones of fin-tube baseboard, each on its own thermostat. Each zone gets its own <strong>circulator</strong>, mounted on the supply and <strong>pumping away</strong> from the expansion tank.</p><p>A loop needs roughly <strong>1 gpm per 10,000 BTU/h</strong> for a 20°F drop. Too little flow and the far end of the baseboard runs cold. Turn the power on and run a design day.</p>`,
+ hint:`For each zone, drag ¾″ boiler supply from the header straight up to the zone’s left port, and ¾″ return from its right port down to the return header. Put a <strong>Circulator</strong> on each supply riser above the header, and turn on <strong>Integral flow check</strong> so idle zones don’t ghost-heat. Then press <strong>Design day</strong>.`,
+ setup(S){bFuel(S);bNear(S);},
+ goals:[['All four zones piped, supply and return',(A)=>A.circuits.filter(c=>!c.dhw).every(c=>c.piped)],
+        ['One circulator per zone, with flow checks',(A)=>A.circuits.filter(c=>!c.dhw).every(c=>c.pumps.length===1&&!A.issues.some(i=>/shares a circulator|ghost flow/.test(i.title)))],
+        ['Pumping away from the expansion tank',(A)=>A.circuits.filter(c=>!c.dhw).every(c=>c.pumps.length)&&!A.issues.some(i=>/pumping toward|ahead of the air/.test(i.title))],
+        ['Design day: every room holds 68°F or better',(A,S)=>zonesHot(A,S)&&A.velOK]]},
+{key:'b-dhw',short:'Indirect & mixer',kicker:'Domestic hot water',title:'Indirect tank and mixing valve',scene:'boiler',checks:['fuel','near','zones','dhw'],nozzle:0.75,mixSet:130,
+ tools:['hand','pipe','dev','erase'],systems:['hsup','hret','cold','hot','mixed'],devices:['circ','check'],sizes:{hsup:1,hret:1,cold:.5,hot:.75,mixed:.75},
+ intro:`<p>An <strong>indirect tank</strong> heats domestic water with a boiler coil inside it, piped as its own zone. It's held at <strong>140°F</strong> so Legionella can't grow, which is too hot for a tap.</p><p>A <strong>thermostatic mixing valve</strong> blends tank hot (H) with cold (C) and sends <strong>120°F</strong> to the house from MIX. With <strong>DHW priority</strong>, the heating zones pause while the tank recovers.</p>`,
+ hint:`Coil: 1″ supply from the header down to the tank’s upper right port with its own circulator (IFC), and 1″ from the lower right port back to the return. Cold: from the main down into the tank top-left, and a ½″ branch up to the mixer’s C side with a <strong>Check valve</strong>. Hot: tank top-right up and over to H. Tempered: MIX up and across to the house hot line. Set the mixer to 120°F, turn on priority, and press <strong>Shower test</strong>.`,
+ setup(S){bFuel(S);bNear(S);bZones(S);},
+ goals:[['Indirect coil piped as its own zone with a circulator',(A)=>{const c=A.circuits.find(c=>c.dhw);return c.piped&&c.pumps.length===1&&!A.issues.some(i=>i.title.startsWith('Indirect')&&/circulator|ghost/.test(i.title));}],
+        ['Cold to the tank, and to the mixer through a check valve',(A)=>A.tankCold&&A.mixC&&A.mixCheck],
+        ['Tank hot to H, tempered water from MIX to the house',(A)=>A.mixH&&A.mixToHouse&&!A.hotToHouse],
+        ['Shower test: 120°F at the taps, DHW priority on, 100+ gph recovery',(A,S)=>showerOK(A,S)&&S.priority]]},
+{key:'b-exam',short:'Boiler exam',kicker:'Final exam',title:'Install the whole boiler room',scene:'boiler',checks:['fuel','near','zones','dhw'],nozzle:0.5,mixSet:130,
+ tools:['hand','pipe','dev','erase'],systems:['oil','flue','hsup','hret','cold','hot','mixed'],devices:['filter','firo','baro','airsep','hxt','relief','bfp','fillv','circ','check'],sizes:{oil:.375,flue:6,hsup:1.25,hret:1.25,cold:.75,hot:.75,mixed:.75},
+ intro:`<p>An empty boiler room and a full job: oil line and flue, nozzle, near-boiler piping and fill, four zones, the indirect tank and the mixing valve. Pass inspection, hold every room on a design day, then deliver 120°F showers.</p>`,
+ hint:`Work in the same order as steps 1–4. Size the nozzle first, since everything downstream depends on boiler output, and leave room on the supply header for five takeoffs.`,
+ setup(S){},
+ goals:[['Fuel, flue and nozzle pass',(A)=>A.oilOK&&A.filter&&A.firo&&A.flueOK&&A.baro&&A.flueDown==null&&A.sizeRatio>=1&&A.sizeRatio<=1.3],
+        ['Near-boiler piping and fill pass',(A)=>A.airsep&&A.hxt&&A.relief&&A.fillConn&&A.bfp&&A.fillv&&A.retPiped],
+        ['Design day: every room holds 68°F or better',(A,S)=>zonesHot(A,S)],
+        ['Shower test: 120°F at the taps, 100+ gph recovery',(A,S)=>showerOK(A,S)],
+        ['Inspector: zero errors',(A)=>A.errors===0&&A.oilOK]]},
+];
+if(typeof module!=='undefined')module.exports={BLAB,boilerFx,bFuel,bNear,bZones,bDHW,analyzeBoiler,ZONES,buildTwoBath,twoBathFx,buildHill,newState,baseFx,LESSONS,analyze,buildSample,fullHouseFx,run,setAttr,block,addFx,addEdge,nid,ek};
 </script>
 <script>
 /* ================= UI ================= */
@@ -565,11 +772,11 @@ const $=s=>document.querySelector(s);
 const cv=$('#cv'),ctx=cv.getContext('2d'),wrap=$('#wrap');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let rebuildSandbox=true,S,A,mode='lessons',lessonIdx=0,tool='pipe',hover=null,sel=null,undo=[],C=22,showHint=false,flash='';
-const opt={sys:'cold',size:{cold:.75,hot:.75,drain:2,vent:1.5},slope:.25,fx:'lav',valveSys:'cold'};
+const opt={dev:'circ',ifc:false,sys:'cold',size:{cold:.75,hot:.75,drain:2,vent:1.5,hsup:.75,hret:.75,oil:.375,flue:6,mixed:.75},slope:.25,fx:'lav',valveSys:'cold'};
 let done=new Set();try{done=new Set(JSON.parse(localStorage.getItem('roughin-done')||'[]'));}catch(e){}
 const saveDone=()=>{try{localStorage.setItem('roughin-done',JSON.stringify([...done]));}catch(e){}};
 const TOOLS={
-  hand:{label:'Operate',svg:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5V4a1.5 1.5 0 0 1 3 0v6m0-4.5a1.5 1.5 0 0 1 3 0V11m0-2.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15a1.6 1.6 0 0 1 2.4-2l1 1"/>',note:'Click a fixture to open or close it, click a valve to turn it, or click the meter to switch the water.'},
+  hand:{label:'Operate',svg:'<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5V4a1.5 1.5 0 0 1 3 0v6m0-4.5a1.5 1.5 0 0 1 3 0V11m0-2.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15a1.6 1.6 0 0 1 2.4-2l1 1"/>',note:'Click a fixture to open or close it, a valve to turn it, or the meter to switch the water. In the Boiler lab, click a zone to toggle its thermostat.'},
   pipe:{label:'Pipe',svg:'<path d="M3 7h9a5 5 0 0 1 5 5v9"/><path d="M3 4v6M14 21h6"/>',note:'Drag to lay pipe. Drawing over a pipe changes its size.'},
   trap:{label:'Trap',svg:'<path d="M4 4v7a6 6 0 0 0 12 0V9h4"/><path d="M6 13a4 4 0 0 0 8 0" opacity=".5"/>',note:'Click a fixture’s drain outlet to add or remove a P-trap.'},
   valve:{label:'Valve',svg:'<path d="M3 8l8 4-8 4zM21 8l-8 4 8 4z"/><path d="M12 12V4M8 4h8"/>',note:'Click a supply pipe to add or remove a ball valve. Turn it with Operate.'},
@@ -578,9 +785,12 @@ const TOOLS={
   cleanout:{label:'Cleanout',svg:'<circle cx="12" cy="12" r="7"/><rect x="9" y="9" width="6" height="6"/>',note:'Click the end of a drain to cap it with a cleanout plug.'},
   slope:{label:'Slope',svg:'<path d="M3 8l18 6"/><path d="M3 18h18M17 18v-3"/>',note:'Drag along a horizontal drain to set its fall per foot.'},
   erase:{label:'Erase',svg:'<path d="M4 16l9-9 6 6-7 7H7z"/><path d="M12 20h8"/>',note:'Drag to remove pipe and fittings.'},
+  dev:{label:'Device',svg:'<circle cx="12" cy="12" r="6"/><path d="M12 6v12M6 12h12" opacity=".55"/><path d="M2 12h4M18 12h4"/>',note:'Pick a device, then click a pipe to add or remove it.'},
   fixture:{label:'Fixture',svg:'<rect x="5" y="10" width="14" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',note:'Click to set a fixture down. The square you click is its bottom center.'},
 };
-const lesson=()=>mode==='lessons'?LESSONS[lessonIdx]:null;
+const LL=()=>mode==='boiler'?BLAB:LESSONS;
+const lesson=()=>mode!=='sandbox'?LL()[lessonIdx]:null;
+const lastIdx={lessons:0,boiler:0};
 const allowedTools=()=>lesson()?lesson().tools:['hand','pipe','valve','prv','xtank','trap','cleanout','slope','erase','fixture'];
 const allowedSys=()=>lesson()?lesson().systems:['cold','hot','drain','vent'];
 
@@ -589,13 +799,16 @@ function restore(j){const d=JSON.parse(j);S.fixtures=d.f;for(const s of SYSTEMS)
 function pushUndo(){undo.push(snapshot());if(undo.length>80)undo.shift();}
 function doUndo(){if(!undo.length)return;restore(undo.pop());recompute();}
 
-function loadLesson(i){mode='lessons';lessonIdx=i;const L=LESSONS[i];S=newState();S.supplyOn=L.supplyOn;S.drainOn=L.drainOn;S.staticPsi=L.psi;baseFx(S);L.setup(S);
+function loadLesson(i,m){mode=m||(mode==='boiler'?'boiler':'lessons');lessonIdx=i;lastIdx[mode]=i;const L=LL()[i];S=newState();
+  if(mode==='boiler'){H=BH;boilerFx(S);S.checks=L.checks;S.nozzle=L.nozzle;if(L.mixSet)S.mixSet=L.mixSet;S.supplyOn=false;S.drainOn=false;}
+  else{H=32;S.supplyOn=L.supplyOn;S.drainOn=L.drainOn;S.staticPsi=L.psi;baseFx(S);}
+  L.setup(S);resize();
   Object.assign(opt.size,L.sizes);opt.sys=L.systems[0];tool='pipe';undo=[];sel=null;showHint=false;renderTools();recompute();}
-function loadSandbox(sample){mode='sandbox';rebuildSandbox=true;S=newState();baseFx(S);fullHouseFx(S);if(sample)buildSample(S);opt.sys='cold';tool=sample?'hand':'pipe';undo=[];sel=null;renderTools();recompute();}
+function loadSandbox(sample){mode='sandbox';rebuildSandbox=true;H=32;resize();S=newState();baseFx(S);fullHouseFx(S);if(sample)buildSample(S);opt.sys='cold';tool=sample?'hand':'pipe';undo=[];sel=null;renderTools();recompute();}
 
 /* ---------- palette ---------- */
 let pal={};
-function readPal(){const cs=getComputedStyle(document.documentElement);for(const k of['sky','room','room-2','framing','framing-line','crawl','soil','soil-dot','concrete','grid','cold','hot','drain','vent','water','pipe-edge','fixture','fixture-line','ok','warn','err','ink','muted','accent','panel','line'])pal[k]=cs.getPropertyValue('--'+k).trim();}
+function readPal(){const cs=getComputedStyle(document.documentElement);for(const k of['sky','room','room-2','framing','framing-line','crawl','soil','soil-dot','concrete','grid','cold','hot','drain','vent','water','pipe-edge','fixture','fixture-line','ok','warn','err','ink','muted','accent','panel','line','hsup','hret','oil','flue','mixed','brick','mortar','cat','mouse'])pal[k]=cs.getPropertyValue('--'+k).trim();}
 readPal();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readPal);
 new MutationObserver(readPal).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class','style']});
@@ -607,11 +820,12 @@ function resize(){const w=wrap.clientWidth-2;C=Math.max(17,Math.min(30,Math.floo
 new ResizeObserver(resize).observe(wrap);
 
 /* ---------- drawing ---------- */
-const OFF={cold:-0.2,hot:0.2,drain:0,vent:0};
+const OFF={cold:-0.2,hot:0.2,drain:0,vent:0,hsup:-0.12,hret:0.12,oil:0,flue:0,mixed:0};
 const pt=(n,sys)=>[(nx(n)+.5+OFF[sys])*C,(ny(n)+.5+OFF[sys])*C];
-const pw=(sys,s)=>sys==='drain'?C*(.1+s*.075):sys==='vent'?C*(.08+s*.06):C*(.1+s*.13);
+const pw=(sys,s)=>sys==='drain'?C*(.1+s*.075):sys==='vent'?C*(.08+s*.06):sys==='flue'?C*.62:sys==='oil'?C*.1:sys==='hsup'||sys==='hret'?C*(.1+s*.11):C*(.1+s*.13);
 function font(sz,w=500,fam='mono'){ctx.font=`${w} ${sz}px ${fam==='mono'?'"JetBrains Mono",monospace':'"Barlow Condensed","Arial Narrow",sans-serif'}`;}
 function drawScene(){
+  if(S.scene==='boiler'){drawBoilerScene();return;}
   const w=W*C,h=H*C;
   ctx.fillStyle=pal.sky;ctx.fillRect(0,0,w,h);
   // soil outside & below
@@ -623,12 +837,19 @@ function drawScene(){
     ctx.strokeStyle=pal['framing-line'];ctx.lineWidth=C*.18;ctx.strokeRect(x,y,w,h);ctx.lineWidth=C*.08;ctx.beginPath();ctx.moveTo(x+w/2,y);ctx.lineTo(x+w/2,y+h);ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();
     ctx.strokeStyle=pal.panel;ctx.globalAlpha=.6;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+C*.4,y+h*.4);ctx.lineTo(x+w*.3,y+C*.4);ctx.stroke();ctx.globalAlpha=1;
     font(Math.max(9,C*.34),700);ctx.fillStyle=pal.muted;ctx.textBaseline='top';ctx.textBaseline='bottom';ctx.fillText('WINDOW · NO PIPE',x+C*.1,y-C*.15);}
-  // crawlspace
-  ctx.fillStyle=pal.crawl;ctx.fillRect(1*C,(F1+1)*C,(W-2)*C,2*C);
+  // basement
+  ctx.fillStyle=pal.crawl;ctx.fillRect(1*C,(F1+1)*C,(W-2)*C,(SLAB-F1-1)*C);
+  ctx.fillStyle=pal['room-2'];ctx.globalAlpha=.35;for(let y=F1+1;y<SLAB;y+=.67)ctx.fillRect(1.15*C,y*C,(W-2.3)*C,1);ctx.globalAlpha=1;
   // soil dots
-  ctx.fillStyle=pal['soil-dot'];for(let i=0;i<260;i++){const x=((i*73)%W)*C+((i*37)%17)/17*C,y=(F1+.7+((i*29)%40)/40*(H-F1-.7))*C;if(y>(F1+1)*C&&y<(F1+3)*C&&x>C&&x<(W-1)*C)continue;ctx.fillRect(x,y,1.6,1.6);}
-  // foundation walls
-  ctx.fillStyle=pal.concrete;ctx.fillRect(.6*C,(F1)*C,.55*C,3.3*C);ctx.fillRect((W-1.15)*C,(F1)*C,.55*C,3.3*C);ctx.fillRect(.6*C,(F1+3)*C,(W-1.2)*C,.3*C);
+  ctx.fillStyle=pal['soil-dot'];for(let i=0;i<300;i++){const x=((i*73)%W)*C+((i*37)%17)/17*C,y=(F1+.7+((i*29)%40)/40*(H-F1-.7))*C;if(y<(SLAB+.3)*C&&x>.6*C&&x<(W-.6)*C)continue;ctx.fillRect(x,y,1.6,1.6);}
+  // foundation walls & slab
+  ctx.fillStyle=pal.concrete;ctx.fillRect(.6*C,(F1)*C,.55*C,(SLAB-F1+.6)*C);ctx.fillRect((W-1.15)*C,(F1)*C,.55*C,(SLAB-F1+.6)*C);ctx.fillRect(.6*C,SLAB*C,(W-1.2)*C,.6*C);
+  // oil heat in the basement (decorative; piped in the Boiler lab)
+  {const bx=33.2*C,by=24.2*C;ctx.lineWidth=1.2;ctx.strokeStyle=pal['fixture-line'];ctx.fillStyle=pal.fixture;rr(bx,by,2.4*C,5.8*C,3);ctx.fill();ctx.stroke();
+   ctx.fillStyle=pal.hsup;ctx.fillRect(bx,by+.5*C,2.4*C,.18*C);ctx.fillStyle=pal.accent;rr(bx-.7*C,by+2.4*C,.9*C,1*C,3);ctx.fill();
+   ctx.fillStyle=pal.flue;ctx.fillRect(bx+.9*C,(F1+1)*C,.55*C,by-(F1+1)*C);
+   ctx.fillStyle=pal.fixture;rr(35.9*C,27.2*C,2.2*C,2.3*C,C*.8);ctx.fill();ctx.stroke();ctx.strokeStyle=pal.ink;ctx.beginPath();ctx.moveTo(36.3*C,29.5*C);ctx.lineTo(36.3*C,30*C);ctx.moveTo(37.7*C,29.5*C);ctx.lineTo(37.7*C,30*C);ctx.stroke();
+   font(Math.max(8,C*.28),700);ctx.fillStyle=pal.muted;ctx.textBaseline='middle';ctx.textAlign='center';ctx.fillText('OIL',bx+1.2*C,by+1.5*C);ctx.fillText('BOILER',bx+1.2*C,by+2*C);ctx.fillText('OIL',37*C,28*C);ctx.fillText('TANK',37*C,28.5*C);ctx.textAlign='left';}
   // exterior walls
   ctx.fillStyle=pal.framing;ctx.fillRect(.7*C,ROOF*C,.35*C,(F1-ROOF)*C);ctx.fillRect((W-1.05)*C,ROOF*C,.35*C,(F1-ROOF)*C);
   // floors
@@ -645,20 +866,133 @@ function drawScene(){
   ctx.strokeStyle=pal.grid;ctx.lineWidth=1;ctx.beginPath();for(let x=0;x<=W;x++){ctx.moveTo(x*C+.5,0);ctx.lineTo(x*C+.5,h);}for(let y=0;y<=H;y++){ctx.moveTo(0,y*C+.5);ctx.lineTo(w,y*C+.5);}ctx.stroke();
   // labels
   font(Math.max(10,C*.5),700,'disp');ctx.fillStyle=pal.muted;ctx.textBaseline='top';
-  ctx.fillText('2ND FLOOR',1.4*C,(ROOF+.65)*C);ctx.fillText('1ST FLOOR',1.4*C,(F2+1.65)*C);ctx.fillText('CRAWLSPACE',33*C,(F1+2.05)*C);ctx.fillText('ROOF',1.4*C,.9*C);
+  ctx.fillText('2ND FLOOR',1.4*C,(ROOF+.65)*C);ctx.fillText('1ST FLOOR',1.4*C,(F2+1.65)*C);ctx.fillText('BASEMENT',1.4*C,(F1+1.65)*C);ctx.fillText('ROOF',1.4*C,.9*C);
   font(Math.max(9,C*.38),500);ctx.textAlign='right';
-  const el=[[ROOF,"EL 18'-0\""],[F2+1,"EL 9'-0\""],[F1+1,"EL 0'-0\""]];
+  const el=[[ROOF,"EL 18'-0\""],[F2+1,"EL 9'-0\""],[F1+1,"EL 0'-0\""],[SLAB,"EL -8'-0\""]];
   for(const[y,t]of el){ctx.fillStyle=pal.muted;ctx.fillText(t,(W-1.3)*C,(y-.55)*C);ctx.beginPath();ctx.strokeStyle=pal.muted;ctx.moveTo((W-1.25)*C,y*C);ctx.lineTo((W-.75)*C,y*C);ctx.stroke();}
   ctx.textAlign='left';
   // street main & sewer out (decorative)
-  ctx.lineCap='butt';ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=pw('cold',.75)+2;ctx.beginPath();ctx.moveTo(0,(22.5-.2)*C);ctx.lineTo(2*C,(22.5-.2)*C);ctx.stroke();
+  ctx.lineCap='butt';ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=pw('cold',.75)+2;ctx.beginPath();ctx.moveTo(0,(27.5-.2)*C);ctx.lineTo(2*C,(27.5-.2)*C);ctx.stroke();
   ctx.strokeStyle=pal.cold;ctx.lineWidth=pw('cold',.75);ctx.stroke();
-  font(Math.max(9,C*.34),500);ctx.fillStyle=pal.ink;ctx.fillText('FROM MAIN',.15*C,(21.55)*C);
-  ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=pw('drain',4)+2;ctx.beginPath();ctx.moveTo(0,24.5*C);ctx.lineTo(1*C,24.5*C);ctx.stroke();ctx.strokeStyle=pal.drain;ctx.lineWidth=pw('drain',4);ctx.stroke();
-  ctx.fillStyle=pal.ink;ctx.fillText('TO SEWER',.15*C,25.25*C);
+  font(Math.max(9,C*.34),500);ctx.fillStyle=pal.ink;ctx.fillText('FROM MAIN',.15*C,(26.55)*C);
+  ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=pw('drain',4)+2;ctx.beginPath();ctx.moveTo(0,29.5*C);ctx.lineTo(1*C,29.5*C);ctx.stroke();ctx.strokeStyle=pal.drain;ctx.lineWidth=pw('drain',4);ctx.stroke();
+  ctx.fillStyle=pal.ink;ctx.fillText('TO SEWER',.15*C,30.75*C);
 }
+function drawBoilerScene(){
+  const w=W*C,h=H*C;
+  ctx.fillStyle=pal.room;ctx.fillRect(0,0,w,3*C);
+  ctx.fillStyle=pal.crawl;ctx.fillRect(0,4*C,w,(B_SLAB-4)*C);
+  ctx.strokeStyle=pal['room-2'];ctx.globalAlpha=.55;ctx.lineWidth=1;ctx.beginPath();
+  for(let y=4,r=0;y<B_SLAB;y+=.67,r++){ctx.moveTo(0,y*C);ctx.lineTo(w,y*C);for(let x=(r%2)*.67;x<W;x+=1.33){ctx.moveTo(x*C,y*C);ctx.lineTo(x*C,(y+.67)*C);}}ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle=pal.framing;ctx.fillRect(0,3*C,w,C);ctx.strokeStyle=pal['framing-line'];ctx.beginPath();for(let x=.4;x<W;x+=1.33){ctx.moveTo(x*C,3.18*C);ctx.lineTo(x*C,3.95*C);}ctx.stroke();
+  ctx.fillStyle=pal['framing-line'];ctx.fillRect(0,3*C,w,C*.14);
+  ctx.fillStyle=pal.concrete;ctx.fillRect(0,B_SLAB*C,w,(H-B_SLAB)*C);
+  ctx.fillStyle=pal['soil-dot'];for(let i=0;i<120;i++)ctx.fillRect(((i*73)%W)*C+((i*31)%13)/13*C,(B_SLAB+.3+((i*17)%10)/10*1.6)*C,1.5,1.5);
+  ctx.strokeStyle=pal.grid;ctx.lineWidth=1;ctx.beginPath();for(let x=0;x<=W;x++){ctx.moveTo(x*C+.5,0);ctx.lineTo(x*C+.5,h);}for(let y=0;y<=H;y++){ctx.moveTo(0,y*C+.5);ctx.lineTo(w,y*C+.5);}ctx.stroke();
+  font(Math.max(10,C*.5),700,'disp');ctx.fillStyle=pal.muted;ctx.textBaseline='top';
+  ctx.fillText('1ST FLOOR · HEATING ZONES',3.4*C,.3*C);ctx.fillText('BASEMENT BOILER ROOM',3.6*C,4.4*C);
+  font(Math.max(9,C*.38),500);ctx.textAlign='right';for(const[y,t]of[[4,"EL 0'-0\""],[B_SLAB,"EL -8'-0\""]]){ctx.fillText(t,(W-.3)*C,(y-.55)*C);}ctx.textAlign='left';
+}
+function txt(t,x,y,sz,col,align,wt){font(Math.max(8,sz),wt||600);ctx.fillStyle=col||pal.ink;ctx.textAlign=align||'left';ctx.textBaseline='middle';ctx.fillText(t,x,y);ctx.textAlign='left';}
+function drawBoilerFx(f,t){
+  const d=FX[f.type],x=f.x*C,y=f.y*C,w=d.w*C,h=d.h*C,r=A.fx[f.id]||{};ctx.lineWidth=1.4;ctx.strokeStyle=pal['fixture-line'];ctx.fillStyle=pal.fixture;
+  if(f.type==='chimney'){ctx.fillStyle=pal.brick;ctx.fillRect(x,0,w,B_SLAB*C);ctx.strokeStyle=pal.mortar;ctx.lineWidth=1;ctx.beginPath();
+    for(let yy=0,k=0;yy<B_SLAB;yy+=.33,k++){ctx.moveTo(x,yy*C);ctx.lineTo(x+w,yy*C);for(let xx=(k%2)*.5;xx<d.w;xx+=1){ctx.moveTo(x+xx*C,yy*C);ctx.lineTo(x+xx*C,(yy+.33)*C);}}ctx.stroke();
+    const[tx,ty]=[(f.x+d.w)*C,(f.y+6.5)*C];ctx.fillStyle=pal.ink;ctx.beginPath();ctx.arc(tx-.1*C,ty,C*.42,0,7);ctx.fill();
+    ctx.save();ctx.translate(x+w/2,y+h*.62);ctx.rotate(-Math.PI/2);txt('MASONRY CHIMNEY · CLAY LINER',0,0,C*.42,pal.mortar,'center',700);ctx.restore();}
+  else if(f.type==='boiler'){rr(x+.05*C,y,w-.1*C,h,4);ctx.fill();ctx.stroke();
+    ctx.fillStyle=pal.hsup;ctx.globalAlpha=.85;ctx.fillRect(x+.05*C,y+.6*C,w-.1*C,.22*C);ctx.globalAlpha=1;
+    txt('OIL BOILER',x+w/2,y+1.4*C,C*.45,pal.ink,'center',700);txt('CAST IRON · 3 SECTION',x+w/2,y+1.95*C,C*.3,pal.muted,'center');
+    const fg=y+3.1*C;rr(x+.6*C,fg,w-1.2*C,2.2*C,4);ctx.fillStyle=pal['room-2'];ctx.fill();ctx.stroke();
+    if(r.running){const fl=.75+.25*Math.sin(t/90)+.1*Math.sin(t/37);ctx.fillStyle=pal.hsup;ctx.globalAlpha=.85;ctx.beginPath();ctx.ellipse(x+w/2+.2*C,fg+1.1*C,C*.9*fl,C*.55*fl,0,0,7);ctx.fill();ctx.fillStyle=pal.warn;ctx.beginPath();ctx.ellipse(x+w/2,fg+1.1*C,C*.45*fl,C*.3,0,0,7);ctx.fill();ctx.globalAlpha=1;}
+    else txt('FLAME',x+w/2,fg+1.1*C,C*.3,pal.muted,'center');
+    rr(x-.95*C,y+2.5*C,1.25*C,1.4*C,3);ctx.fillStyle=pal.accent;ctx.fill();ctx.strokeStyle=pal.ink;ctx.stroke();ctx.beginPath();ctx.arc(x-.35*C,y+3.2*C,C*.32,0,7);ctx.fillStyle=pal.panel;ctx.fill();ctx.stroke();
+    txt('BURNER',x-.35*C,y+4.25*C,C*.28,pal.ink,'center',700);
+    rr(x+w-1.5*C,y+5.8*C,1.2*C,.9*C,3);ctx.fillStyle=pal.panel;ctx.fill();ctx.stroke();txt(S.power?`${Math.round(A.Ts||68)}°`:'OFF',x+w-.9*C,y+6.25*C,C*.34,r.running?pal.hsup:pal.muted,'center',700);
+    txt('AQUASTAT',x+w-.9*C,y+7.05*C,C*.24,pal.muted,'center');}
+  else if(f.type==='oiltank'){rr(x+.1*C,y+.2*C,w-.2*C,h-1.1*C,C*1.5);ctx.fillStyle=pal.fixture;ctx.fill();ctx.stroke();
+    ctx.strokeStyle=pal.ink;ctx.lineWidth=2;ctx.beginPath();for(const lx of[.9,w/C-.9]){ctx.moveTo(x+lx*C,y+h-.95*C);ctx.lineTo(x+lx*C,y+h);}ctx.stroke();
+    txt('275 GAL · #2 OIL',x+w/2,y+1.6*C,C*.42,pal.oil,'center',700);txt('FILL & VENT TO OUTSIDE',x+w/2,y+2.3*C,C*.26,pal.muted,'center');
+    ctx.strokeStyle=pal.oil;ctx.lineWidth=C*.12;ctx.beginPath();ctx.moveTo(x+1.6*C,y+.2*C);ctx.lineTo(x+1.6*C,4*C);ctx.moveTo(x+3.4*C,y+.2*C);ctx.lineTo(x+3.4*C,4*C);ctx.stroke();}
+  else if(f.type==='indirect'){rr(x+.05*C,y,w-.1*C,h,C*.6);ctx.fill();ctx.stroke();
+    ctx.strokeStyle=pal.hsup;ctx.globalAlpha=.6;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<5;i++){const cy=y+1.3*C+i*.95*C;ctx.ellipse(x+w/2,cy,w*.32,C*.18,0,0,7);}ctx.stroke();ctx.globalAlpha=1;
+    ctx.save();ctx.translate(x+w*.2,y+h/2);ctx.rotate(-Math.PI/2);txt('INDIRECT · 40 GAL',0,0,C*.36,pal.muted,'center',700);ctx.restore();
+    txt(`${A.tankT||55}°F`,x+w/2,y+h-.6*C,C*.34,A.tankT>=140?pal.hot:pal.muted,'center',700);}
+  else if(f.type==='mixer'){ctx.fillStyle=pal.warn;ctx.beginPath();ctx.arc(x+w/2,y+h/2,C*.46,0,7);ctx.fill();ctx.strokeStyle=pal.ink;ctx.stroke();
+    ctx.fillStyle=pal.panel;ctx.beginPath();ctx.arc(x+w/2,y+h/2,C*.22,0,7);ctx.fill();
+    txt('H',x-.55*C,y-.2*C,C*.3,pal.hot,'center',700);txt('C',x+w+.55*C,y-.2*C,C*.3,pal.cold,'center',700);txt('MIX',x+w/2+.62*C,y-.62*C,C*.26,pal.mixed,'left',700);
+    txt(`${S.mixSet}°F`,x+w/2,y+h+.35*C,C*.32,pal.ink,'center',700);txt('MIXING VALVE',x+w/2,y+h+.8*C,C*.24,pal.muted,'center');}
+  else if(f.type==='cmain'||f.type==='hhot'){rr(x+.15*C,y+.15*C,w-.3*C,h-.3*C,3);ctx.fill();ctx.stroke();
+    txt(f.type==='cmain'?'COLD MAIN':'TO HOUSE HOT',x-.1*C,y-.35*C,C*.28,f.type==='cmain'?pal.cold:pal.mixed,'right',700);}
+  else if(f.type==='zone'){const on=r.running;rr(x+.05*C,y+.15*C,w-.1*C,h-.3*C,4);ctx.fillStyle=pal.panel;ctx.fill();ctx.strokeStyle=on?pal.hsup:pal['fixture-line'];ctx.lineWidth=on?2:1.2;ctx.stroke();
+    const c=(A.circuits||[]).find(c=>c.id===f.id);const nm=f.label.split(': ');
+    txt(nm[0].toUpperCase(),x+.25*C,y+.55*C,C*.28,pal.muted,'left',700);txt(nm[1],x+.25*C,y+1.05*C,C*.27,pal.ink,'left',700);
+    txt(`${(f.load/1000)}k BTU/h · ${f.bb} ft`,x+.25*C,y+1.55*C,C*.27,pal.muted);
+    ctx.strokeStyle=on?pal.hsup:pal['fixture-line'];ctx.lineWidth=1.2;ctx.beginPath();for(let i=0;i<14;i++){const fx=x+.3*C+i*(w-.6*C)/13;ctx.moveTo(fx,y+2.05*C);ctx.lineTo(fx,y+2.5*C);}ctx.stroke();
+    const room=c&&c.room!=null?Math.round(c.room):null,call=S.open.has(f.id);
+    ctx.beginPath();ctx.arc(x+w-.55*C,y+.8*C,C*.42,0,7);ctx.fillStyle=call?pal.accent:pal['room-2'];ctx.fill();
+    txt(room!=null?room+'°':call?'CALL':'OFF',x+w-.55*C,y+.82*C,C*.26,call?pal.panel:pal.muted,'center',700);}
+}
+function drawDev(a,x,y,horiz,t){
+  ctx.save();ctx.translate(x,y);ctx.lineWidth=1.4;ctx.strokeStyle=pal.ink;const v=a.v;
+  if(v==='circ'){ctx.fillStyle=pal.cold;rr(-C*.75,-C*.32,C*.5,C*.64,3);ctx.fill();ctx.stroke();ctx.fillStyle=pal.panel;ctx.beginPath();ctx.arc(0,0,C*.38,0,7);ctx.fill();ctx.stroke();
+    ctx.rotate(reduce?0:(t/120)%(Math.PI*2)*(a.on?1:0));ctx.strokeStyle=pal.hsup;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<3;i++){const an=i*2.09;ctx.moveTo(0,0);ctx.lineTo(Math.cos(an)*C*.3,Math.sin(an)*C*.3);}ctx.stroke();ctx.setTransform(dpr,0,0,dpr,0,0);
+    if(a.ifc)txt('IFC',x+C*.45,y-C*.45,C*.24,pal.ok,'left',700);ctx.restore();return;}
+  if(v==='airsep'){ctx.fillStyle=pal.panel;rr(-C*.32,-C*.95,C*.64,C*1.4,C*.3);ctx.fill();ctx.stroke();ctx.fillStyle=pal.ink;ctx.fillRect(-C*.1,-C*1.2,C*.2,C*.25);txt('AS',0,-C*.3,C*.26,pal.ink,'center',700);}
+  else if(v==='hxt'){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,C*.4);ctx.stroke();ctx.fillStyle=pal.panel;rr(-C*.38,C*.4,C*.76,C*1.15,C*.38);ctx.fill();ctx.stroke();ctx.fillStyle=pal.hret;ctx.fillRect(-C*.32,C*1.05,C*.64,C*.3);txt('XT',0,C*.75,C*.24,pal.ink,'center',700);}
+  else if(v==='relief'){ctx.fillStyle=pal.warn;rr(-C*.2,-C*.3,C*.5,C*.6,2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(C*.05,-C*.3);ctx.lineTo(C*.45,-C*.6);ctx.stroke();
+    ctx.strokeStyle=pal.flue;ctx.lineWidth=C*.12;ctx.beginPath();ctx.moveTo(C*.3,0);ctx.lineTo(C*.55,0);ctx.lineTo(C*.55,(B_SLAB-.4)*C-y);ctx.stroke();txt('30 PSI',C*.7,-C*.45,C*.24,pal.ink,'left',700);}
+  else if(v==='bfp'){ctx.fillStyle=pal.ok;rr(-C*.45,-C*.28,C*.9,C*.56,3);ctx.fill();ctx.stroke();txt('BFP',0,1,C*.24,pal.panel,'center',700);}
+  else if(v==='fillv'){ctx.fillStyle=pal.warn;ctx.beginPath();ctx.arc(0,-C*.1,C*.32,0,7);ctx.fill();ctx.stroke();ctx.fillRect(-C*.06,-C*.7,C*.12,C*.3);txt('12#',0,-C*.1,C*.22,pal.ink,'center',700);}
+  else if(v==='check'){ctx.fillStyle=pal.panel;rr(-C*.36,-C*.28,C*.72,C*.56,3);ctx.fill();ctx.stroke();ctx.fillStyle=pal.ink;ctx.beginPath();ctx.moveTo(-C*.08,-C*.18);ctx.lineTo(C*.16,0);ctx.lineTo(-C*.08,C*.18);ctx.fill();}
+  else if(v==='filter'){ctx.fillStyle=pal.oil;rr(-C*.26,-C*.2,C*.52,C*.9,3);ctx.fill();ctx.stroke();txt('F',0,C*.25,C*.28,pal.panel,'center',700);}
+  else if(v==='firo'){ctx.fillStyle=pal.err;ctx.beginPath();for(let i=0;i<6;i++){const an=i*Math.PI/3;ctx.lineTo(Math.cos(an)*C*.3,Math.sin(an)*C*.3);}ctx.closePath();ctx.fill();ctx.stroke();txt('FV',0,0,C*.2,pal.panel,'center',700);}
+  else if(v==='baro'){ctx.fillStyle=pal.panel;ctx.beginPath();ctx.arc(0,-C*.55,C*.38,0,7);ctx.fill();ctx.stroke();const sw=A.firing&&!reduce?Math.sin(t/400)*.25:0;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(Math.cos(.8+sw)*-C*.32,-C*.55+Math.sin(.8+sw)*-C*.32);ctx.lineTo(Math.cos(.8+sw)*C*.32,-C*.55+Math.sin(.8+sw)*C*.32);ctx.stroke();txt('BARO',C*.45,-C*.95,C*.22,pal.ink,'left',700);}
+  ctx.restore();}
+/* ---------- basement cat ---------- */
+const pets={cat:{x:24,face:-1,state:'prowl',tt:0,px:0,jump:0,target:null},mice:[],last:0,caught:0,spawnT:1};
+function petFloor(){return S.scene==='boiler'?B_SLAB:SLAB;}
+function updPets(t){const dt=Math.min(.05,Math.max(0,(t-(pets.last||t))/1000));pets.last=t;if(reduce)return;
+  const minX=2.4,maxX=W-2.4,cat=pets.cat;
+  pets.spawnT-=dt;if(pets.mice.length<2&&pets.spawnT<=0){const side=Math.random()<.5;pets.mice.push({x:side?minX-.6:maxX+.6,dir:side?1:-1,v:2.2,pause:0,flee:false,ph:Math.random()*9});pets.spawnT=2+Math.random()*4;}
+  for(const m of pets.mice){m.ph+=dt*14;const d=m.x-cat.x;
+    if(!m.flee&&Math.abs(d)<2.2&&(cat.state==='pounce'||cat.state==='stalk'&&Math.random()<dt*.6)){m.flee=true;m.dir=Math.sign(d)||1;m.v=5;}
+    if(m.pause>0){m.pause-=dt;continue;}
+    if(!m.flee&&Math.random()<dt*.5){m.pause=.3+Math.random()*.9;if(Math.random()<.35)m.dir*=-1;}
+    m.x+=m.dir*m.v*dt;if(!m.flee&&(m.x<minX||m.x>maxX))m.dir*=-1;}
+  pets.mice=pets.mice.filter(m=>m.x>minX-1.5&&m.x<maxX+1.5&&!m.dead);
+  const tgt=pets.mice.filter(m=>!m.flee).sort((a,b)=>Math.abs(a.x-cat.x)-Math.abs(b.x-cat.x))[0];cat.tt-=dt;
+  if(cat.state==='prowl'){if(tgt){cat.face=Math.sign(tgt.x-cat.x)||cat.face;cat.x+=cat.face*1.1*dt;if(Math.abs(tgt.x-cat.x)<4.2){cat.state='stalk';cat.target=tgt;cat.tt=1.2+Math.random();}}
+    else{cat.x+=cat.face*.6*dt;if(cat.x<minX+1||cat.x>maxX-1)cat.face*=-1;}}
+  else if(cat.state==='stalk'){const m=cat.target;if(!m||m.flee||!pets.mice.includes(m)){cat.state='prowl';}else{cat.face=Math.sign(m.x-cat.x)||cat.face;cat.x+=cat.face*.35*dt;
+    if(cat.tt<=0||Math.abs(m.x-cat.x)<2.2){cat.state='pounce';cat.px=cat.x;cat.jx=m.x+(m.pause>0?0:m.dir*m.v*.35);cat.tt=.45;}}}
+  else if(cat.state==='pounce'){const k=1-Math.max(0,cat.tt)/.45;cat.x=cat.px+(cat.jx-cat.px)*k;cat.jump=Math.sin(k*Math.PI)*1.3;
+    if(cat.tt<=0){cat.jump=0;const hit=pets.mice.find(m=>Math.abs(m.x-cat.x)<.7);if(hit){hit.dead=true;pets.caught++;cat.state='proud';cat.tt=2.2;}else{cat.state='miss';cat.tt=1.3;}}}
+  else if((cat.state==='proud'||cat.state==='miss')&&cat.tt<=0)cat.state='prowl';
+  cat.x=Math.max(minX,Math.min(maxX,cat.x));}
+function drawPets(t){updPets(t);const fy=petFloor()*C,cat=pets.cat,k=C*.5,x=cat.x*C,crouch=cat.state==='stalk'?.55:cat.state==='proud'||cat.state==='miss'?0:0,base=fy-cat.jump*C;
+  for(const m of pets.mice){const mx=m.x*C,my=fy-C*.14;ctx.save();ctx.translate(mx,my);ctx.scale(m.dir,1);ctx.fillStyle=pal.mouse;ctx.beginPath();ctx.ellipse(0,0,C*.24,C*.13,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(C*.2,-C*.07,C*.09,0,7);ctx.arc(C*.07,-C*.14,C*.07,0,7);ctx.fill();
+    ctx.strokeStyle=pal.mouse;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(-C*.22,0);ctx.quadraticCurveTo(-C*.45,-C*.12+Math.sin(m.ph)*C*.06,-C*.6,C*.02);ctx.stroke();ctx.fillStyle=pal.ink;ctx.beginPath();ctx.arc(C*.25,-C*.06,1.2,0,7);ctx.fill();ctx.restore();}
+  ctx.save();ctx.translate(x,base);ctx.scale(cat.face,1);ctx.fillStyle=pal.cat;ctx.strokeStyle=pal.cat;
+  const walking=(cat.state==='prowl'||cat.state==='stalk')&&!reduce,ph=t/(cat.state==='stalk'?260:150),sit=cat.state==='proud'||cat.state==='miss'||reduce;
+  if(sit){ctx.beginPath();ctx.ellipse(-C*.1,-C*.55,C*.42,C*.55,-.15,0,7);ctx.fill();ctx.beginPath();ctx.arc(C*.25,-C*1.12,C*.3,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(C*.08,-C*1.3);ctx.lineTo(C*.12,-C*1.6);ctx.lineTo(C*.3,-C*1.38);ctx.moveTo(C*.32,-C*1.38);ctx.lineTo(C*.48,-C*1.6);ctx.lineTo(C*.52,-C*1.28);ctx.fill();
+    ctx.lineWidth=C*.12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-C*.45,-C*.15);ctx.quadraticCurveTo(-C*.95,-C*.1,-C*.8,-C*.6+Math.sin(t/300)*C*.1);ctx.stroke();
+    ctx.fillStyle=pal.warn;ctx.beginPath();ctx.arc(C*.36,-C*1.15,C*.05,0,7);ctx.fill();
+    if(cat.state==='proud'){ctx.fillStyle=pal.mouse;ctx.beginPath();ctx.ellipse(C*.55,-C*.95,C*.15,C*.08,.4,0,7);ctx.fill();}}
+  else{const by=-C*(.62-crouch*.3),leg=C*(.48-crouch*.25);
+    ctx.lineWidth=C*.11;ctx.lineCap='round';ctx.beginPath();for(const[lx,o]of[[-C*.5,0],[-C*.3,Math.PI],[C*.3,Math.PI],[C*.5,0]]){const sw=walking?Math.sin(ph+o)*C*.14:cat.jump>0?(lx>0?C*.25:-C*.25):0;ctx.moveTo(lx,by+C*.1);ctx.lineTo(lx+sw,by+C*.1+leg);}ctx.stroke();
+    ctx.beginPath();ctx.ellipse(0,by,C*.72,C*(.26-crouch*.04),0,0,7);ctx.fill();
+    const hx=C*.75,hy=by-C*(.2-crouch*.25);ctx.beginPath();ctx.arc(hx,hy,C*.27,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(hx-C*.18,hy-C*.12);ctx.lineTo(hx-C*.12,hy-C*.45);ctx.lineTo(hx+.02*C,hy-C*.22);ctx.moveTo(hx+C*.04,hy-C*.22);ctx.lineTo(hx+C*.2,hy-C*.45);ctx.lineTo(hx+C*.24,hy-C*.08);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-C*.68,by-C*.05);const tw=walking?Math.sin(ph*.6)*C*.15:0;
+    if(cat.state==='stalk')ctx.quadraticCurveTo(-C*1.2,by-C*.05,-C*1.5,by+tw*.5);else ctx.quadraticCurveTo(-C*1.15,by-C*.15,-C*1.05,by-C*.75+tw);ctx.stroke();
+    ctx.fillStyle=pal.warn;ctx.beginPath();ctx.arc(hx+C*.12,hy-C*.03,C*.05,0,7);ctx.fill();}
+  ctx.restore();
+  if(pets.caught)txt(`Mice caught: ${pets.caught}`,(W-2.6)*C,fy-C*.35,C*.3,pal.muted,'right',700);}
 function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);}
 function drawFixture(f,t){
+  if(S.scene==='boiler'){drawBoilerFx(f,t);return;}
   const d=FX[f.type],x=f.x*C,y=f.y*C,w=d.w*C,h=d.h*C,r=A.fx[f.id];
   ctx.lineWidth=1.4;ctx.strokeStyle=pal['fixture-line'];ctx.fillStyle=pal.fixture;
   const run_=r&&r.running;
@@ -699,7 +1033,7 @@ function drawFixture(f,t){
 }
 function stream(x,y1,y2,t){ctx.strokeStyle=pal.water;ctx.lineWidth=Math.max(2,C*.12);ctx.lineCap='round';ctx.setLineDash([C*.18,C*.14]);ctx.lineDashOffset=reduce?0:-t/30;ctx.beginPath();ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.stroke();ctx.setLineDash([]);}
 function drawPorts(){
-  for(const f of S.fixtures)for(const p of FX[f.type].ports){if(f.type==='meter'||f.type==='sewer')continue;const n=portNode(f,p),[x,y]=pt(n,p.sys);const con=A.adj[p.sys].has(n);
+  for(const f of S.fixtures)for(const p of FX[f.type].ports){if(f.type==='meter'||f.type==='sewer')continue;if(p.sys==='dev'){const n=portNode(f,p);if(S.attrs.hsup.get(n)?.v!=='relief'){const[x,y]=pt(n,'hsup');ctx.setLineDash([3,3]);ctx.strokeStyle=pal.warn;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,C*.26,0,7);ctx.stroke();ctx.setLineDash([]);}continue;}const n=portNode(f,p),[x,y]=pt(n,p.sys);const con=A.adj[p.sys].has(n);
     ctx.beginPath();ctx.arc(x,y,C*.2,0,7);ctx.lineWidth=2;ctx.strokeStyle=pal[p.sys];ctx.fillStyle=con?pal[p.sys]:pal.panel;ctx.fill();ctx.stroke();}
   const m=S.fixtures.find(f=>f.type==='meter'),s=S.fixtures.find(f=>f.type==='sewer');
   for(const[f,sys]of[[m,'cold'],[s,'drain']]){if(!f)continue;const n=portOf(f,sys),[x,y]=pt(n,sys);if(A.adj[sys].has(n))continue;ctx.beginPath();ctx.arc(x,y,C*.2,0,7);ctx.lineWidth=2;ctx.strokeStyle=pal[sys];ctx.fillStyle=pal.panel;ctx.fill();ctx.stroke();}
@@ -707,7 +1041,7 @@ function drawPorts(){
 function line(a,b){ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}
 function drawPipes(t){
   ctx.lineCap='round';ctx.lineJoin='round';
-  for(const sys of['drain','vent','cold','hot']){
+  for(const sys of['flue','oil','drain','vent','hret','hsup','cold','hot','mixed']){
     const E=[...S.edges[sys].values()];if(!E.length)continue;
     for(const e of E){ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=pw(sys,e.size)+2.5;line(pt(e.a,sys),pt(e.b,sys));}
     for(const e of E){ctx.strokeStyle=pal[sys];ctx.lineWidth=pw(sys,e.size);line(pt(e.a,sys),pt(e.b,sys));}
@@ -723,10 +1057,11 @@ function drawPipes(t){
       const mx=(a[0]+b[0])/2,my=a[1]-pw('drain',e.size)/2-2;ctx.fillText(SL[e.slope],mx,my);
       if(dir){const s=Math.sign(nx(dir[1])-nx(dir[0]));ctx.beginPath();ctx.moveTo(mx+s*C*.22,a[1]+pw('drain',e.size)/2+C*.18);ctx.lineTo(mx-s*C*.08,a[1]+pw('drain',e.size)/2+C*.08);ctx.lineTo(mx-s*C*.08,a[1]+pw('drain',e.size)/2+C*.28);ctx.fill();}
       ctx.textAlign='left';}}
+  for(const e of S.edges.flue.values()){if(!A.badEdges.has(ek(e.a,e.b)))continue;ctx.strokeStyle=pal.err;ctx.lineWidth=pw('flue',6)+5;ctx.globalAlpha=.35+.2*Math.sin(t/200);line(pt(e.a,'flue'),pt(e.b,'flue'));ctx.globalAlpha=1;}
   for(const e of S.edges.vent.values()){if(!A.badVent||!A.badVent.has(ek(e.a,e.b)))continue;ctx.strokeStyle=pal.err;ctx.lineWidth=pw('vent',e.size)+5;ctx.globalAlpha=.35+.2*Math.sin(t/200);line(pt(e.a,'vent'),pt(e.b,'vent'));ctx.globalAlpha=1;}
   // flow animation
   for(const an of A.anim){const a=pt(an.a,an.sys),b=pt(an.b,an.sys);const e=S.edges[an.sys].get(ek(an.a,an.b));
-    ctx.strokeStyle=an.sys==='drain'?pal.water:'#FFFFFF';ctx.globalAlpha=an.sys==='drain'?.9:.75;ctx.lineWidth=Math.max(1.5,pw(an.sys,e.size)*.4);ctx.setLineDash([C*.18,C*.32]);
+    ctx.strokeStyle=an.sys==='drain'?pal.water:an.sys==='flue'?pal.ink:'#FFFFFF';ctx.globalAlpha=an.sys==='drain'?.9:an.sys==='flue'?.35:.75;ctx.lineWidth=Math.max(1.5,pw(an.sys,e.size)*.4);ctx.setLineDash([C*.18,C*.32]);
     ctx.lineDashOffset=reduce?0:-(t/1000)*C*Math.min(10,1.2+an.v*1.1);line(a,b);ctx.setLineDash([]);ctx.globalAlpha=1;}
   // attributes: traps, valves, prv, cleanouts
   for(const[n,a]of S.attrs.drain){if(!A.adj.drain.has(n))continue;const[x,y]=pt(n,'drain');
@@ -734,7 +1069,9 @@ function drawPipes(t){
       ctx.strokeStyle=pal['pipe-edge'];ctx.lineWidth=C*.34;ctx.beginPath();ctx.arc(x,y,C*.3,0,Math.PI);ctx.stroke();ctx.strokeStyle=pal.drain;ctx.lineWidth=C*.24;ctx.stroke();
       ctx.strokeStyle=bad&&r.running?pal.err:pal.water;ctx.lineWidth=C*.12;ctx.beginPath();ctx.arc(x,y,C*.3,bad&&r.running?Math.PI*.35:Math.PI*.15,bad&&r.running?Math.PI*.65:Math.PI*.85);ctx.stroke();}
     if(a.co){ctx.fillStyle=pal.panel;ctx.strokeStyle=pal.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,C*.3,0,7);ctx.fill();ctx.stroke();ctx.fillStyle=pal.ink;ctx.fillRect(x-C*.12,y-C*.12,C*.24,C*.24);}}
-  for(const sys of['cold','hot'])for(const[n,a]of S.attrs[sys]){if(!A.adj[sys].has(n))continue;const[x,y]=pt(n,sys);const l=A.adj[sys].get(n);const horiz=l.some(m=>ny(m)===ny(n));
+  const running=new Set();for(const c of A.circuits||[])if(c.active)c.pumps.forEach(k=>running.add(k));
+  for(const sys of['hsup','hret','cold','oil','flue'])for(const[n,a]of S.attrs[sys]){if(!DEVS[a.v])continue;if(!A.adj[sys].has(n)&&a.v!=='relief')continue;const[x,y]=pt(n,sys);drawDev({...a,on:running.has((sys==='hret'?'R':'S')+n)},x,y,true,t);}
+  for(const sys of['cold','hot'])for(const[n,a]of S.attrs[sys]){if(!A.adj[sys].has(n)||DEVS[a.v])continue;const[x,y]=pt(n,sys);const l=A.adj[sys].get(n);const horiz=l.some(m=>ny(m)===ny(n));
     ctx.save();ctx.translate(x,y);if(!horiz)ctx.rotate(Math.PI/2);
     if(a.v==='xtank'){ctx.restore();ctx.save();ctx.translate(x,y);ctx.strokeStyle=pal.ink;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(C*.55,0);ctx.stroke();rr(C*.55,-C*.9,C*.6,C*1.1,C*.3);ctx.fillStyle=pal.panel;ctx.fill();ctx.stroke();ctx.fillStyle=pal.cold;ctx.fillRect(C*.6,-C*.35,C*.5,C*.5);}
     else if(a.v==='prv'){ctx.fillStyle=pal.accent;rr(-C*.42,-C*.3,C*.84,C*.6,4);ctx.fill();ctx.fillStyle=pal.panel;font(C*.3,700);ctx.textAlign='center';ctx.textBaseline='middle';if(!horiz)ctx.rotate(-Math.PI/2);ctx.fillText('PRV',0,1);}
@@ -760,7 +1097,7 @@ function drawEffects(t){
 function frame(t){
   if(!S){requestAnimationFrame(frame);return;}
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  drawScene();for(const f of S.fixtures)drawFixture(f,t);drawPipes(t);drawPorts();drawEffects(t);
+  drawScene();for(const f of S.fixtures)drawFixture(f,t);drawPipes(t);drawPorts();drawEffects(t);drawPets(t);
   if(sel!=null){const x=(nx(sel)+.5)*C,y=(ny(sel)+.5)*C;ctx.strokeStyle=pal.err;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x,y,C*(.6+.15*Math.sin(t/180)),0,7);ctx.stroke();}
   if(hover){ctx.strokeStyle=pal.accent;ctx.lineWidth=2;ctx.strokeRect(hover.x*C+1,hover.y*C+1,C-2,C-2);
     if(tool==='fixture'){const d=FX[opt.fx],x0=hover.x-Math.floor(d.w/2),y0=hover.y-d.h+1;ctx.setLineDash([4,3]);ctx.strokeRect(x0*C,y0*C,d.w*C,d.h*C);ctx.setLineDash([]);}}
@@ -777,20 +1114,26 @@ function setFlash(m){flash=m;renderStatus();clearTimeout(setFlash.t);setFlash.t=
 cv.addEventListener('pointerdown',e=>{const c=cellAt(e);if(!c)return;const n=nid(c.x,c.y);
   if(tool==='hand'){const f=fxAt(c.x,c.y);
     for(const s of['cold','hot']){const a=S.attrs[s].get(n);if(a&&(a.v==='open'||a.v==='closed')&&A.adj[s].has(n)){a.v=a.v==='open'?'closed':'open';recompute();return;}}
+    if(f&&S.scene==='boiler'){if(f.type==='zone'||f.type==='indirect'){S.open.has(f.id)?S.open.delete(f.id):S.open.add(f.id);recompute();}else if(f.type==='boiler')toggleWater();return;}
     if(f){if(f.type==='meter'){toggleWater();return;}if(FX[f.type].q||FX[f.type].dfu){S.open.has(f.id)?S.open.delete(f.id):S.open.add(f.id);recompute();}}return;}
   if(tool==='pipe'||tool==='erase'||tool==='slope'){pushUndo();cv.setPointerCapture(e.pointerId);stroke={last:c,moved:false};
     if(tool==='erase'){const f=fxAt(c.x,c.y);if(mode==='sandbox'&&f&&!FX[f.type].fixed){S.fixtures=S.fixtures.filter(g=>g!==f);S.open.delete(f.id);}eraseCell(n);recompute();}return;}
   if(tool==='trap'||tool==='cleanout'){if(!A.adj.drain.has(n)){setFlash(tool==='trap'?'Traps go on a drain pipe. Run a drain to the fixture outlet first.':'Cleanouts go on a drain pipe end.');return;}
     pushUndo();const a=S.attrs.drain.get(n)||{};if(tool==='trap')a.trap=!a.trap;else a.co=!a.co;if(!a.trap&&!a.co)S.attrs.drain.delete(n);else S.attrs.drain.set(n,a);recompute();return;}
+  if(tool==='dev'){const D=DEVS[opt.dev];
+    if(opt.dev==='relief'){const bf=S.fixtures.find(f=>f.type==='boiler'),rn=portNode(bf,FX.boiler.ports.find(p=>p.role==='relief'));if(n!==rn){setFlash('The relief valve threads into the boiler’s relief tapping: the dashed socket on its right side.');return;}
+      pushUndo();if(S.attrs.hsup.get(n)?.v==='relief')S.attrs.hsup.delete(n);else S.attrs.hsup.set(n,{v:'relief'});recompute();return;}
+    const s=D.layers.find(l=>A.adj[l].has(n));if(!s){setFlash(`A ${D.label.toLowerCase()} goes on ${D.layers.map(l=>SYS[l].label.toLowerCase()).join(' or ')} pipe.`);return;}
+    pushUndo();const a=S.attrs[s].get(n);if(a&&a.v===opt.dev)S.attrs[s].delete(n);else S.attrs[s].set(n,opt.dev==='circ'?{v:'circ',ifc:opt.ifc}:{v:opt.dev});recompute();return;}
   if(tool==='xtank'){if(!A.adj.cold.has(n)){setFlash('Expansion tanks go on the cold water feeding the heater.');return;}
     pushUndo();const a=S.attrs.cold.get(n);if(a&&a.v==='xtank')S.attrs.cold.delete(n);else S.attrs.cold.set(n,{v:'xtank'});recompute();return;}
   if(tool==='valve'||tool==='prv'){const cands=tool==='prv'?['cold']:[opt.valveSys,opt.valveSys==='cold'?'hot':'cold'];const s=cands.find(s=>A.adj[s].has(n)&&allowedSys().includes(s));
     if(!s){setFlash(tool==='prv'?'Put the PRV on the cold main, just after the shutoff.':'Valves go on a supply pipe.');return;}
     pushUndo();const a=S.attrs[s].get(n);const want=tool==='prv'?'prv':'open';if(a&&(a.v===want||(want==='open'&&a.v==='closed')))S.attrs[s].delete(n);else S.attrs[s].set(n,{v:want});recompute();return;}
   if(tool==='fixture'){const d=FX[opt.fx],x0=c.x-Math.floor(d.w/2),y0=c.y-d.h+1;
-    if(x0<1||x0+d.w>W-1||y0<ROOF+1||y0+d.h>F1){setFlash('That spot is outside the house. Fixtures sit on the 1st or 2nd floor.');return;}
+    if(x0<1||x0+d.w>W-1||y0<ROOF+1||y0+d.h>SLAB){setFlash('That spot is outside the house. Fixtures sit on the basement, 1st or 2nd floor.');return;}
     for(let yy=y0;yy<y0+d.h;yy++)for(let xx=x0;xx<x0+d.w;xx++)if(fxAt(xx,yy)){setFlash('Something is already there.');return;}
-    const sitsOn=y0+d.h===F2||y0+d.h===F1||(opt.fx==='tub'&&(y0+d.h===F2||y0+d.h===F1));if(!sitsOn){setFlash('Set fixtures on a floor: click a square just above the floor framing.');return;}
+    const sitsOn=y0+d.h===F2||y0+d.h===F1||y0+d.h===SLAB;if(!sitsOn){setFlash('Set fixtures on a floor: click a square just above the floor framing.');return;}
     pushUndo();let k=1;while(S.fixtures.some(f=>f.id===opt.fx+k))k++;addFx(S,{id:opt.fx+k,type:opt.fx,x:x0,y:y0});recompute();}
 });
 cv.addEventListener('pointermove',e=>{const c=cellAt(e);hover=c;renderStatus();if(!stroke||!c)return;
@@ -804,13 +1147,14 @@ const endStroke=()=>{if(stroke&&tool==='slope'&&!stroke.moved){const n=nid(strok
 cv.addEventListener('pointerup',endStroke);cv.addEventListener('pointercancel',endStroke);
 cv.addEventListener('pointerleave',()=>{hover=null;renderStatus();});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();doUndo();}});
-function toggleWater(){S.waterOn=!S.waterOn;recompute();}
+function toggleWater(){if(S.scene==='boiler')S.power=!S.power;else S.waterOn=!S.waterOn;recompute();}
 $('#waterBtn').onclick=toggleWater;
-$('#modeLessons').onclick=()=>{if(mode!=='lessons')loadLesson(lessonIdx);};
+$('#modeLessons').onclick=()=>{if(mode!=='lessons')loadLesson(lastIdx.lessons,'lessons');};
+$('#modeBoiler').onclick=()=>{if(mode!=='boiler')loadLesson(lastIdx.boiler,'boiler');};
 $('#modeSandbox').onclick=()=>{if(mode!=='sandbox')loadSandbox(false);};
 
 /* ---------- panels ---------- */
-function recompute(){A=analyze(S);if(sel!=null&&!A.issues.some(i=>i.node===sel))sel=null;renderPanels();}
+function recompute(){A=S.scene==='boiler'?analyzeBoiler(S):analyze(S);if(sel!=null&&!A.issues.some(i=>i.node===sel))sel=null;renderPanels();}
 function renderTools(){
   const al=allowedTools();
   $('#tools').innerHTML=Object.entries(TOOLS).filter(([k])=>al.includes(k)).map(([k,t])=>`<button class="tool" data-tool="${k}" aria-pressed="${tool===k}" title="${t.note}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t.svg}</svg>${t.label}</button>`).join('')+
@@ -824,45 +1168,50 @@ function renderOpts(){
     h+=`<span class="lbl">Size</span><div class="chips">${SYS[opt.sys].sizes.map(z=>`<button class="chip" data-size="${z}" aria-pressed="${opt.size[opt.sys]===z}">${sz(z)}</button>`).join('')}</div>`;}
   else if(tool==='slope')h+=`<span class="lbl">Fall per foot</span><div class="chips">${[0,.125,.25,.5].map(z=>`<button class="chip" data-slope="${z}" aria-pressed="${opt.slope===z}">${z?SL[z]+'″/ft':'flat'}</button>`).join('')}</div>`;
   else if(tool==='valve'&&allowedSys().includes('hot'))h+=`<span class="lbl">Prefer</span><div class="chips">${['cold','hot'].map(s=>`<button class="chip" data-vsys="${s}" aria-pressed="${opt.valveSys===s}"><span class="sw" style="background:var(--${s})"></span>${SYS[s].label}</button>`).join('')}</div>`;
+  else if(tool==='dev'){const ds=lesson()?.devices||Object.keys(DEVS);if(!ds.includes(opt.dev))opt.dev=ds[0];
+    h+=`<span class="lbl">Device</span><div class="chips">${ds.map(k=>`<button class="chip" data-dev="${k}" aria-pressed="${opt.dev===k}">${DEVS[k].label}</button>`).join('')}</div>`;
+    if(opt.dev==='circ')h+=`<button class="chip" data-ifc="1" aria-pressed="${opt.ifc}">Integral flow check</button>`;}
   else if(tool==='fixture')h+=`<span class="lbl">Fixture</span><div class="chips">${['lav','kitchen','toilet','shower','tub'].map(k=>`<button class="chip" data-fx="${k}" aria-pressed="${opt.fx===k}">${FX[k].name}</button>`).join('')}</div>`;
   h+=`<span class="note">${TOOLS[tool].note}</span>`;o.innerHTML=h;}
 $('#opts').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset;
-  if(d.sys)opt.sys=d.sys;if(d.size)opt.size[opt.sys]=+d.size;if(d.slope!=null)opt.slope=+d.slope;if(d.fx)opt.fx=d.fx;if(d.vsys)opt.valveSys=d.vsys;renderOpts();});
+  if(d.sys)opt.sys=d.sys;if(d.size)opt.size[opt.sys]=+d.size;if(d.slope!=null)opt.slope=+d.slope;if(d.fx)opt.fx=d.fx;if(d.vsys)opt.valveSys=d.vsys;if(d.dev)opt.dev=d.dev;if(d.ifc)opt.ifc=!opt.ifc;renderOpts();});
 
 const ftIn=v=>{const s=v<0?'-':'+',a=Math.abs(v),f=Math.floor(a+1e-9);let i=Math.round((a-f)*12);return`${s}${f}′-${i}″`;};
-const zone=y=>y<ROOF?'above roof':y<F2?'2nd floor':y===F2?'2nd-floor framing':y<F1?'1st floor':y===F1?'1st-floor framing':y<=23?'crawlspace':'below grade';
+const zone=y=>y<ROOF?'above roof':y<F2?'2nd floor':y===F2?'2nd-floor framing':y<F1?'1st floor':y===F1?'1st-floor framing':y<SLAB?'basement':'below slab';
 function renderStatus(){
   const L=$('#statusL'),R=$('#statusR');
   if(flash){L.innerHTML=`<b style="color:var(--err)">${flash}</b>`;}
-  else if(hover){const n=nid(hover.x,hover.y);let s=`<b>${zone(hover.y)}</b> · EL ${ftIn(F1-(hover.y+.5)+1)}`;
+  else if(hover){const n=nid(hover.x,hover.y);const bz=S.scene==='boiler';let s=bz?`<b>${hover.y<3?'1st floor':hover.y===3?'floor framing':hover.y<B_SLAB?'basement':'slab'}</b> · ${(B_SLAB-(hover.y+.5)).toFixed(1)} ft above slab`:`<b>${zone(hover.y)}</b> · EL ${ftIn(F1-(hover.y+.5)+1)}`;
     for(const sys of SYSTEMS){if(!A.adj[sys].has(n))continue;const l=A.adj[sys].get(n);const mx=Math.max(...l.map(m=>S.edges[sys].get(ek(n,m)).size));s+=` · <b style="color:var(--${sys})">${SYS[sys].label} ${sz(mx)}</b>`;
       if(sys==='cold'||sys==='hot'){const P=(sys==='cold'?A.PC:A.PH).get(n),PS=(sys==='cold'?A.PSC:A.PSH).get(n);if(PS!=null)s+=S.waterOn?` ${Math.max(0,P).toFixed(1)} psi (static ${PS.toFixed(1)})`:` static ${PS.toFixed(1)} psi`;}
       if(sys==='drain'&&A.dfu){const k=l.map(m=>ek(n,m)).find(k=>A.dfu.has(k));if(k)s+=` ${A.dfu.get(k)} DFU`;}}
     const f=fxAt(hover.x,hover.y);if(f)s+=` · ${fxName(f)}`;L.innerHTML=s;}
   else L.textContent=TOOLS[tool].note;
-  R.textContent=S.supplyOn?`Street ${S.staticPsi} psi · water ${S.waterOn?'on':'off'}`:'Supply not modeled in this lesson';}
+  R.textContent=S.scene==='boiler'?`Boiler ${A.firing?Math.round(A.Ts)+'°F, firing':S.power?'standby':'power off'} · ${A.psi} psi · return ${Math.round(A.Tr||68)}°F`:S.supplyOn?`Street ${S.staticPsi} psi · water ${S.waterOn?'on':'off'}`:'Supply not modeled in this lesson';}
 function renderPanels(){
   // header & strip
-  $('#modeLessons').setAttribute('aria-pressed',mode==='lessons');$('#modeSandbox').setAttribute('aria-pressed',mode==='sandbox');
-  const wb=$('#waterBtn');wb.hidden=!S.supplyOn;wb.setAttribute('aria-pressed',S.waterOn);$('#waterTxt').textContent=S.waterOn?'Water on':'Water off';
-  $('#strip').hidden=mode!=='lessons';
-  $('#strip').innerHTML=LESSONS.map((L,i)=>`<button data-l="${i}" class="${done.has(L.key)?'done':''}" aria-current="${mode==='lessons'&&i===lessonIdx}"><span class="n">${done.has(L.key)?'✓':i+1}</span>${L.short}</button>`).join('');
+  $('#modeLessons').setAttribute('aria-pressed',mode==='lessons');$('#modeSandbox').setAttribute('aria-pressed',mode==='sandbox');$('#modeBoiler').setAttribute('aria-pressed',mode==='boiler');
+  const bz=S.scene==='boiler',wb=$('#waterBtn');wb.hidden=!S.supplyOn&&!bz;const on=bz?S.power:S.waterOn;wb.setAttribute('aria-pressed',on);$('#waterTxt').textContent=bz?(on?'Power on':'Power off'):(on?'Water on':'Water off');
+  $('#legend').innerHTML=(bz?['hsup','hret','oil','flue','cold','hot','mixed']:['cold','hot','drain','vent']).map(k=>`<span><i style="background:var(--${k})"></i>${SYS[k].label}</span>`).join('')+`<span>1 square = 1 ft${bz?' · copper hydronic · ⅜″ oil · 6″ flue':' · copper type L supply · PVC DWV'}</span>`;
+  $('#strip').hidden=mode==='sandbox';
+  $('#strip').innerHTML=LL().map((L,i)=>`<button data-l="${i}" class="${done.has(L.key)?'done':''}" aria-current="${mode!=='sandbox'&&i===lessonIdx}"><span class="n">${done.has(L.key)?'✓':i+1}</span>${L.short}</button>`).join('');
   // lesson card
   const lc=$('#lessonCard');
-  if(mode==='lessons'){const L=lesson();const st=L.goals.map(([t,fn])=>[t,!!fn(A,S)]);const all=st.every(g=>g[1]);if(all&&!done.has(L.key)){done.add(L.key);saveDone();}
-    lc.innerHTML=`<div class="kicker">Lesson ${lessonIdx+1} of ${LESSONS.length} · ${L.kicker}</div><h2>${L.title}</h2><div class="lesson-body">${L.intro}</div>
+  if(mode!=='sandbox'){const L=lesson();const LN=LL().length,bzL=mode==='boiler';const st=L.goals.map(([t,fn])=>[t,!!fn(A,S)]);const all=st.every(g=>g[1]);if(all&&!done.has(L.key)){done.add(L.key);saveDone();}
+    lc.innerHTML=`<div class="kicker">${bzL?'Boiler lab · step':'Lesson'} ${lessonIdx+1} of ${LN} · ${L.kicker}</div><h2>${L.title}</h2><div class="lesson-body">${L.intro}</div>
     <ul class="goals">${st.map(([t,m])=>`<li class="${m?'met':''}"><span class="box"></span><span>${t}</span></li>`).join('')}</ul>
     ${showHint?`<div class="hint">${L.hint}</div>`:''}
-    ${all?`<div class="complete"><strong>Lesson complete.</strong> ${lessonIdx<LESSONS.length-1?'Ready for the next one.':'You’ve roughed in a whole house. Try the Sandbox next.'}</div>`:''}
-    <div class="row-btns">${all&&lessonIdx<LESSONS.length-1?`<button class="btn primary" data-act="next">Next lesson</button>`:''}${all&&lessonIdx===LESSONS.length-1?`<button class="btn primary" data-act="sandbox">Open Sandbox</button>`:''}<button class="btn" data-act="hint">${showHint?'Hide hint':'Show hint'}</button><button class="btn" data-act="reset">Reset lesson</button></div>`;}
+    ${all?`<div class="complete"><strong>${bzL?'Step':'Lesson'} complete.</strong> ${lessonIdx<LN-1?'Ready for the next one.':bzL?'The boiler room is commissioned. Nice work.':'You’ve roughed in a whole house. Try the Sandbox or the Boiler lab next.'}</div>`:''}
+    <div class="row-btns">${all&&lessonIdx<LN-1?`<button class="btn primary" data-act="next">Next ${bzL?'step':'lesson'}</button>`:''}${all&&lessonIdx===LN-1&&!bzL?`<button class="btn primary" data-act="sandbox">Open Sandbox</button>`:''}<button class="btn" data-act="hint">${showHint?'Hide hint':'Show hint'}</button><button class="btn" data-act="reset">Reset ${bzL?'step':'lesson'}</button></div>`;}
   else if(lc.dataset.mode==='sandbox'&&!rebuildSandbox){$('#psiOut').textContent=S.staticPsi+' psi';}
   else lc.innerHTML=`<div class="kicker">Sandbox</div><h2>Free build</h2><div class="lesson-body"><p>Place fixtures, pipe them however you like and let the inspector judge. Raise street pressure past 80 psi to see why houses get a PRV.</p></div>
     <div class="slider"><label for="psi">Street pressure <output id="psiOut">${S.staticPsi} psi</output></label><input id="psi" type="range" min="30" max="120" step="5" value="${S.staticPsi}"></div>
     <div class="row-btns"><button class="btn primary" data-act="sample">Load sample house</button><button class="btn" data-act="clear">Clear piping</button><button class="btn" data-act="empty">Empty house</button></div>`;
   lc.dataset.mode=mode;rebuildSandbox=false;
   // fixtures
+  if(bz)renderBoilerCard();else{
   const fc=$('#fxCard'),list=S.fixtures.filter(f=>FX[f.type].q||FX[f.type].dfu);
-  const fl=f=>f.y<F2?'2nd fl.':'1st fl.';
+  const fl=f=>f.y<F2?'2nd fl.':f.y<F1?'1st fl.':'basement';
   const psiTxt=(r,s)=>{const o=r[s];if(o.P==null)return`<span>${s==='cold'?'C':'H'} —</span>`;const v=S.waterOn&&o.Q>0.001?Math.max(0,o.P):o.PS;const low=S.waterOn&&o.Q>0.001&&o.P<r.def.pmin;
     return`<span class="${s==='cold'?'c':'h'}${low?' bad':''}">${s==='cold'?'C':'H'} ${v.toFixed(1)} psi${S.waterOn&&o.Q>0.001?' · '+o.Q.toFixed(2)+' gpm':''}</span>`;};
   const dr=r=>{if(!r.drain)return'';const D=r.drain;if(D.problem)return`<span class="pill ${D.problem==='Not connected'?'warn':'err'}">${D.problem}</span>`;return`<span class="pill ok">Trapped · vented${D.armLen!=null?' · '+D.armLen+' ft arm':''}</span>`;};
@@ -871,31 +1220,51 @@ function renderPanels(){
      const rd=[S.supplyOn&&r.def.q?psiTxt(r,'cold'):'',S.supplyOn&&r.def.hotFrac?psiTxt(r,'hot'):'',S.drainOn?dr(r):''].join('');
      return`<div class="fx"><div class="nm">${fxName(f)}<small>${fl(f)} · ${r.def.dfu} DFU</small></div><button class="tog" data-fx="${f.id}" aria-pressed="${isOpen}">${isOpen?(r.running?'Running':'Open'):'Closed'}</button><div class="rd">${rd||'<span>—</span>'}</div></div>`;}).join('')}</div>
    <p class="summary" style="margin-top:8px">Materials <b style="color:${lesson()?.budget&&A.cost.total>lesson().budget?'var(--err)':'var(--ink)'}">$${A.cost.total}</b>${lesson()?.budget?` of $${lesson().budget} budget`:''} · ${A.cost.ft} ft of pipe</p>
-   ${S.supplyOn?`<p class="summary" style="margin-top:8px">${S.waterOn?`Peak cold velocity ${A.maxVel.cold.toFixed(1)} ft/s · hot ${A.maxVel.hot.toFixed(1)} ft/s`:'Water is off: showing static pressure.'}</p>`:''}`;
+   ${S.supplyOn?`<p class="summary" style="margin-top:8px">${S.waterOn?`Peak cold velocity ${A.maxVel.cold.toFixed(1)} ft/s · hot ${A.maxVel.hot.toFixed(1)} ft/s`:'Water is off: showing static pressure.'}</p>`:''}`;}
   // inspector
   const ic=$('#inspCard');const iss=[...A.issues].sort((a,b)=>(a.sev==='err'?0:1)-(b.sev==='err'?0:1));
   ic.innerHTML=`<div class="card-head"><h3>Inspector</h3><span class="summary">${A.errors} error${A.errors===1?'':'s'} · ${A.warns} warning${A.warns===1?'':'s'}</span></div>
    ${iss.length?`<ul class="issues">${iss.slice(0,30).map((i,k)=>`<li class="${i.sev}"><button data-node="${i.node??''}" aria-pressed="${sel!=null&&sel===i.node}"><span class="stripe"></span><span><span class="t">${i.title}</span><span class="d">${i.detail}</span>${i.code?`<span class="code">${i.code}</span>`:''}</span></button></li>`).join('')}</ul>`:`<div class="pass"><span class="pill ok">Pass</span>No code problems found.</div>`}`;
   renderTools();renderStatus();
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-l],.tog,.issues button');if(!b)return;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-l],[data-noz],.tog,.issues button');if(!b)return;
   if(b.dataset.l!=null){loadLesson(+b.dataset.l);return;}
-  if(b.classList.contains('tog')){const id=b.dataset.fx;S.open.has(id)?S.open.delete(id):S.open.add(id);recompute();return;}
+  if(b.dataset.noz){S.nozzle=+b.dataset.noz;recompute();return;}
+  if(b.classList.contains('tog')&&b.dataset.fx){const id=b.dataset.fx;S.open.has(id)?S.open.delete(id):S.open.add(id);recompute();return;}
   if(b.closest('.issues')){const n=b.dataset.node;sel=n===''?null:(sel===+n?null:+n);renderPanels();return;}
   const a=b.dataset.act;
   if(a==='next')loadLesson(lessonIdx+1);else if(a==='sandbox')loadSandbox(false);else if(a==='hint'){showHint=!showHint;renderPanels();}else if(a==='reset')loadLesson(lessonIdx);
+  else if(a==='design'){ZONES.forEach(z=>S.open.add(z.id));recompute();}
+  else if(a==='shower'){S.open.has('ind')?S.open.delete('ind'):S.open.add('ind');recompute();}
+  else if(a==='alloff'){S.open.clear();recompute();}
+  else if(a==='prio'){S.priority=!S.priority;recompute();}
   else if(a==='openall'){S.fixtures.forEach(f=>{if(FX[f.type].q||FX[f.type].dfu)S.open.add(f.id);});recompute();}
   else if(a==='closeall'){S.open.clear();recompute();}
   else if(a==='sample'){pushUndo();for(const s of SYSTEMS){S.edges[s].clear();S.attrs[s].clear();}S.fixtures=S.fixtures.filter(f=>FX[f.type].fixed);fullHouseFx(S);buildSample(S);recompute();}
   else if(a==='clear'){pushUndo();for(const s of SYSTEMS){S.edges[s].clear();S.attrs[s].clear();}recompute();}
   else if(a==='empty'){pushUndo();for(const s of SYSTEMS){S.edges[s].clear();S.attrs[s].clear();}S.fixtures=S.fixtures.filter(f=>FX[f.type].fixed);S.open.clear();recompute();}
 });
-document.addEventListener('input',e=>{if(e.target.id==='psi'){S.staticPsi=+e.target.value;recompute();}});
+document.addEventListener('input',e=>{if(e.target.id==='psi'){S.staticPsi=+e.target.value;recompute();}if(e.target.id==='mixset')$('#mixOut').textContent=e.target.value+'°F';});
+document.addEventListener('change',e=>{if(e.target.id==='mixset'){S.mixSet=+e.target.value;recompute();}});
 
+function renderBoilerCard(){
+  const fc=$('#fxCard'),cs=A.circuits||[],L=lesson();
+  const zrow=c=>{const on=S.open.has(c.id),f=c.f;let rd;
+    if(c.dhw)rd=c.active||c.del>0?`<span>${c.q.toFixed(1)} gpm coil</span><span>${Math.round(c.del/1000)}k BTU/h</span><span>${Math.round(A.recovery)} gph recovery</span>`:`<span>${c.piped?'idle':'not piped'}</span>`;
+    else rd=c.active?`<span>${c.q.toFixed(1)} gpm</span><span>ΔT ${Math.round(c.dT)}°F</span><span class="${c.del<.97*f.load?'bad':''}">${Math.round(c.del/1000)}/${f.load/1000}k BTU/h</span><span class="${c.room<68?'bad':''}">room ${Math.round(c.room)}°F</span>`:c.ghost?`<span class="bad">ghost flow: ${c.q.toFixed(1)} gpm</span>`:`<span>${c.piped?(on?'calling: pump or boiler not running':'satisfied'):'not piped'}</span>`;
+    return`<div class="fx"><div class="nm">${c.dhw?'Indirect tank':f.label.split(': ')[1]}<small>${c.dhw?'tank '+A.tankT+'°F':f.label.split(':')[0]}</small></div><button class="tog" data-fx="${c.id}" aria-pressed="${on}">${on?(c.active?'Heating':'Calling'):'Off'}</button><div class="rd">${rd}</div></div>`;};
+  fc.innerHTML=`<div class="card-head"><h3>Boiler room</h3><span class="summary">${!S.power?'Power off':A.firing?'Burner firing':'Standby'}</span></div>
+   <div class="row-btns" style="margin:0 0 8px"><span class="lbl" style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;align-self:center">Nozzle gph</span>${NOZZLES.map(z=>`<button class="chip" data-noz="${z}" aria-pressed="${S.nozzle===z}">${z.toFixed(2)}</button>`).join('')}</div>
+   <p class="summary">${Math.round(A.input).toLocaleString()} BTU/h in · ${A.output.toLocaleString()} out · <b style="color:${A.sizeRatio<1||A.sizeRatio>1.3?'var(--err)':'var(--ok)'}">${Math.round(A.sizeRatio*100)}%</b> of the ${DESIGN_LOAD.toLocaleString()} BTU/h design load</p>
+   <div class="row-btns"><button class="btn" data-act="design">Design day</button><button class="btn" data-act="shower">${S.open.has('ind')?'End shower test':'Shower test'}</button><button class="btn" data-act="alloff">All off</button><button class="btn" data-act="prio" aria-pressed="${S.priority}">DHW priority: ${S.priority?'on':'off'}</button></div>
+   <div class="slider"><label for="mixset">Mixing valve setpoint <output id="mixOut">${S.mixSet}°F</output></label><input id="mixset" type="range" min="100" max="140" step="5" value="${S.mixSet}"></div>
+   <p class="summary" style="margin-top:8px">Supply ${Math.round(A.Ts)}°F · return ${Math.round(A.Tr)}°F · ${A.psi} psi${A.tapT!=null?` · taps <b style="color:${A.tapT>120?'var(--err)':A.tapT<110?'var(--warn)':'var(--ok)'}">${A.tapT}°F</b>`:''}</p>
+   <div class="fx-list" style="margin-top:8px">${cs.filter(c=>A.ck.has(c.dhw?'dhw':'zones')).map(zrow).join('')}</div>
+   <p class="summary" style="margin-top:8px">Materials <b>$${A.cost.total}</b> · ${A.cost.ft} ft of pipe</p>`;}
 /* ---------- boot ---------- */
 resize();
 let start=0;try{const d=JSON.parse(localStorage.getItem('roughin-done')||'[]');start=Math.min(LESSONS.length-1,LESSONS.findIndex(L=>!d.includes(L.key)));if(start<0)start=0;}catch(e){}
-loadLesson(start);
+lastIdx.lessons=start;loadLesson(start,'lessons');
 requestAnimationFrame(frame);
 </script>
 

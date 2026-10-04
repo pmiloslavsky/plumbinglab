@@ -2,7 +2,7 @@
 
 **Try it live: https://pmiloslavsky.github.io/plumbinglab/**
 
-A browser-based plumbing simulator that teaches residential rough-in. You lay out cold, hot, drain and vent piping in a two-story house cutaway, turn the water on, and a built-in inspector checks your work against the 2021 International Residential Code (IRC).
+A browser-based plumbing and heating simulator. You lay out cold, hot, drain and vent piping in a two-story house cutaway with a full basement, turn the water on, and a built-in inspector checks your work against the 2021 International Residential Code (IRC). A separate Boiler lab covers installing an oil-fired hot-water boiler with four heating zones and an indirect water heater.
 
 Everything is in one file, `index.html`, served by GitHub Pages from the `main` branch. To run it locally, open the file in any modern browser; there is no build step.
 
@@ -31,12 +31,26 @@ Everything is in one file, `index.html`, served by GitHub Pages from the `main` 
 
 There is also a Sandbox for free building, with adjustable street pressure and a sample house.
 
+## Boiler lab
+
+A basement boiler room with a cast-iron oil boiler, a 275-gallon oil tank, a masonry chimney, four baseboard zones upstairs, a 40-gallon indirect tank and a thermostatic mixing valve.
+
+1. Fuel & flue: oil line with filter and firomatic, flue with barometric damper, nozzle sizing
+2. Near-boiler: air separator, expansion tank, relief valve, fill with backflow preventer and fill valve
+3. Four zones: a circulator per zone, pumping away, flow checks against ghost flow, design-day heat
+4. Indirect & mixer: indirect coil zone, check valve on the mixer's cold, 120°F at the taps with DHW priority
+5. Boiler exam: the whole install from an empty room
+
+It models burner output (140,000 BTU per gallon at 85%), circulator curves against piping head loss, baseboard output versus water temperature, the boiler's supply temperature balance, indirect recovery in gallons per hour, and the mixing valve's outlet temperature.
+
+A cat patrols both basements hunting mice.
+
 ## Tests
 
 ```
 node tests/lessons.test.js
 ```
 
-The test loads the simulation engine straight out of `index.html` and checks two things for every lesson: the starting layout doesn't already pass, and a reference solution meets every goal.
+The test loads the simulation engine straight out of `index.html` and checks two things for every lesson and Boiler lab step: the starting layout doesn't already pass, and a reference solution meets every goal.
 
 The simulator uses teaching values. Local code and the inspector have the final word.

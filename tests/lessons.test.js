@@ -7,15 +7,15 @@ const mod={exports:{}};vm.runInNewContext(src,{module:mod,Math,Map,Set,JSON,Obje
 const E=mod.exports,nid=E.nid,ek=E.ek;
 const fixIds=S=>S.fixtures.filter(f=>!['meter','sewer','heater'].includes(f.type)).map(f=>f.id);
 const solutions=[
- S=>{E.run(S,'cold',.75,[[4,22],[29,22],[29,19]]);E.setAttr(S,'cold',5,22,{v:'open'});},
- S=>{E.run(S,'cold',.75,[[4,22],[30,22],[30,13],[19,13]]);},
- S=>{E.run(S,'cold',.75,[[8,22],[8,15],[7,15]]);E.setAttr(S,'cold',8,16,{v:'open'});E.run(S,'hot',.75,[[6,15],[6,14],[20,14],[20,17]]);E.run(S,'hot',.5,[[14,14],[14,19]]);},
+ S=>{E.run(S,'cold',.75,[[4,27],[29,27],[29,19]]);E.setAttr(S,'cold',5,27,{v:'open'});},
+ S=>{E.run(S,'cold',.75,[[4,27],[30,27],[30,13],[19,13]]);},
+ S=>{E.run(S,'cold',.75,[[8,27],[8,15],[7,15]]);E.setAttr(S,'cold',8,16,{v:'open'});E.run(S,'hot',.75,[[6,15],[6,14],[20,14],[20,17]]);E.run(S,'hot',.5,[[14,14],[14,19]]);},
  S=>{E.setAttr(S,'drain',11,10,{trap:true});E.run(S,'vent',1.5,[[14,10],[14,2]]);},
- S=>{E.run(S,'drain',3,[[13,21],[13,23]]);E.run(S,'drain',1.5,[[21,21],[17,21]]);for(let x=6;x<9;x++)S.edges.drain.get(ek(nid(x,23),nid(x+1,23))).slope=.25;},
+ S=>{E.run(S,'drain',3,[[13,21],[13,28]]);E.run(S,'drain',1.5,[[21,21],[17,21]]);for(let x=6;x<9;x++)S.edges.drain.get(ek(nid(x,28),nid(x+1,28))).slope=.25;},
  S=>E.buildSample(S),
- S=>{E.setAttr(S,'cold',7,22,{v:'prv'});E.setAttr(S,'cold',8,18,{v:'xtank'});},
+ S=>{E.setAttr(S,'cold',7,27,{v:'prv'});E.setAttr(S,'cold',8,18,{v:'xtank'});},
  S=>{S.attrs.hot.delete(nid(23,13));E.setAttr(S,'drain',29,19,{trap:true});E.run(S,'vent',1.5,[[22,7],[22,2]]);
-     for(let x=8;x<12;x++)S.edges.drain.get(ek(nid(x,24),nid(x+1,24))).slope=.125;for(let y=19;y<22;y++)S.edges.cold.delete(ek(nid(12,y),nid(12,y+1)));},
+     for(let x=8;x<12;x++)S.edges.drain.get(ek(nid(x,29),nid(x+1,29))).slope=.125;for(let y=19;y<27;y++)S.edges.cold.delete(ek(nid(12,y),nid(12,y+1)));},
  S=>{E.run(S,'drain',2,[[11,10],[21,10]]);E.run(S,'vent',1.5,[[19,10],[19,2]]);},
  S=>E.buildHill(S),
  S=>E.buildTwoBath(S,1),
@@ -26,4 +26,14 @@ E.LESSONS.forEach((L,i)=>{const S=E.newState();S.supplyOn=L.supplyOn;S.drainOn=L
   solutions[i](S);S.waterOn=true;fixIds(S).forEach(id=>S.open.add(id));
   const A=E.analyze(S),after=L.goals.map(([,f])=>!!f(A,S));const ok=after.every(Boolean)&&!before.every(Boolean);
   if(!ok)fail++;console.log(`${ok?'PASS':'FAIL'}  ${i+1}. ${L.title}  [${after.map(b=>b?'✓':'✗').join('')}]  $${A.cost.total}`);});
+// Boiler lab: each step starts unsolved and its reference install passes,
+// with the heating goals checked on a design day and the DHW goals on a shower test.
+const bSol=[S=>{E.bFuel(S);S.nozzle=.75;},S=>E.bNear(S),S=>E.bZones(S),S=>{E.bDHW(S);S.mixSet=120;S.priority=true;},
+  S=>{E.bFuel(S);E.bNear(S);E.bZones(S);E.bDHW(S);S.nozzle=.75;S.mixSet=120;S.priority=true;}];
+E.BLAB.forEach((L,i)=>{const S=E.newState();E.boilerFx(S);S.checks=L.checks;S.nozzle=L.nozzle;if(L.mixSet)S.mixSet=L.mixSet;L.setup(S);
+  const before=L.goals.map(([,f])=>!!f(E.analyzeBoiler(S),S));bSol[i](S);S.power=true;
+  const res=open=>{S.open=new Set(open);const A=E.analyzeBoiler(S);return L.goals.map(([,f])=>!!f(A,S));};
+  const heat=res(E.ZONES.map(z=>z.id)),dhw=res([...E.ZONES.map(z=>z.id),'ind']);
+  const after=heat.map((h,k)=>h||dhw[k]),ok=after.every(Boolean)&&!before.every(Boolean);if(!ok)fail++;
+  console.log(`${ok?'PASS':'FAIL'}  B${i+1}. ${L.title}  [${after.map(b=>b?'✓':'✗').join('')}]`);});
 process.exit(fail?1:0);
